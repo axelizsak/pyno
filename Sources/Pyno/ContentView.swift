@@ -426,11 +426,21 @@ private struct TransportBar: View {
                 .font(.callout)
                 .foregroundStyle(Theme.orange)
         case .preparing:
-            HStack(spacing: 10) {
-                ProgressView().controlSize(.small)
-                Text(recorder.status).font(.callout).foregroundStyle(.secondary)
-                if let progress = recorder.downloadProgress {
-                    ProgressView(value: progress).frame(width: 120)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 10) {
+                    ProgressView().controlSize(.small)
+                    Text(recorder.status).font(.callout).foregroundStyle(.secondary)
+                    if let progress = recorder.downloadProgress {
+                        ProgressView(value: progress).frame(width: 130)
+                        Text("\(Int(progress * 100))%")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if recorder.isFirstRunSetup {
+                    Text(loc[.firstRunNote])
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
                 }
             }
         case .finishing:

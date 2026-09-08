@@ -16,6 +16,7 @@ enum L {
     case record, pause, resume, stop
     case recording, paused, ready
     case checkingMic, loadingModel, starting, lookingForModel, finalizing
+    case firstRunDownload, firstRunCompiling, firstRunNote
     case titleField, titlePlaceholder, spokenLanguage, cancel, start
     case error, ok
     case untitledSession, noSpeechMarkdown, fallbackFileName
@@ -104,6 +105,21 @@ enum L {
             return ("Looking for the model…", "Recherche du modèle…")
         case .finalizing:
             return ("Finalizing transcription…", "Finalisation de la transcription…")
+        case .firstRunDownload:
+            return (
+                "First launch only — downloading the speech model (470 MB)",
+                "Premier lancement seulement — téléchargement du modèle vocal (470 Mo)"
+            )
+        case .firstRunCompiling:
+            return (
+                "First launch only — optimizing the model for this Mac",
+                "Premier lancement seulement — optimisation du modèle pour ce Mac"
+            )
+        case .firstRunNote:
+            return (
+                "This happens once. Pyno then works offline.",
+                "Ça n'arrive qu'une fois. Ensuite Pyno fonctionne hors-ligne."
+            )
         case .titleField:
             return ("Title", "Titre")
         case .titlePlaceholder:
@@ -165,18 +181,6 @@ func tr(_ key: L, _ language: SessionLanguage) -> String {
     language == .french ? key.pair.fr : key.pair.en
 }
 
-func trDownloading(_ done: Int, _ total: Int, _ language: SessionLanguage) -> String {
-    language == .french
-        ? "Téléchargement du modèle Parakeet (\(done)/\(total))"
-        : "Downloading Parakeet model (\(done)/\(total))"
-}
-
-func trCompiling(_ modelName: String, _ language: SessionLanguage) -> String {
-    language == .french
-        ? "Compilation Core ML — \(modelName)"
-        : "Compiling Core ML — \(modelName)"
-}
-
 func trFinalFailed(_ reason: String, _ language: SessionLanguage) -> String {
     language == .french
         ? "La transcription finale a échoué (\(reason)). Le texte déjà confirmé a été conservé."
@@ -204,7 +208,5 @@ final class Localization: ObservableObject {
 
     subscript(key: L) -> String { tr(key, language) }
 
-    func downloading(_ done: Int, _ total: Int) -> String { trDownloading(done, total, language) }
-    func compiling(_ modelName: String) -> String { trCompiling(modelName, language) }
     func finalFailed(_ reason: String) -> String { trFinalFailed(reason, language) }
 }

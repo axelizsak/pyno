@@ -53,6 +53,8 @@ final class Recorder: ObservableObject {
     @Published private(set) var phase: Phase = .idle
     @Published private(set) var status: String = ""
     @Published private(set) var downloadProgress: Double?
+    /// True while the one-time model download/compile is running, so the UI can explain it.
+    @Published private(set) var isFirstRunSetup = false
     @Published private(set) var elapsed: TimeInterval = 0
     @Published private(set) var level: Float = 0
     @Published private(set) var paragraphs: [Paragraph] = []
@@ -294,15 +296,23 @@ final class Recorder: ObservableObject {
 
     // MARK: - Plumbing
 
+    /// `fractionCompleted` is byte-weighted and monotonic across both the download
+    /// and the compile phase, so it is the only honest number to show. The library's
+    /// file counter is not: one file (the encoder weights) is 432 MB of the 470 MB,
+    /// so "6/23" says nothing about how far along the download is.
     private func apply(_ progress: DownloadProgress) {
         downloadProgress = progress.fractionCompleted
         switch progress.phase {
         case .listing:
             status = loc[.lookingForModel]
-        case .downloading(let done, let total):
-            status = loc.downloading(done, total)
-        case .compiling(let name):
-            status = loc.compiling(name)
+            isFirstRunSetup = false
+        case .downloading(_, let total):
+            // total == 0 means nothing to fetch: the model is already cached.
+            status = total > 0 ? loc[.firstRunDownload] : loc[.loadingModel]
+            isFirstRunSetup = total > 0
+        case .compiling:
+            status = loc[.firstRunCompiling]
+            isFirstRunSetup = true
         }
     }
 
@@ -355,6 +365,7 @@ final class Recorder: ObservableObject {
         endActivity()
         stopTimer()
         downloadProgress = nil
+        isFirstRunSetup = false
     }
 
     private func fail(_ error: Error) {
