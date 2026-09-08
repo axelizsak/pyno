@@ -8,8 +8,11 @@ import SwiftUI
 enum L {
     case sessions, newSession, noSessions, noSessionsHint
     case nothingToShow, nothingToShowHint, listening, noSpeech
-    case copy, copyTranscript, share, openInClaude, export, exportPanelTitle
+    case copy, copyTranscript, analyzeInClaude, copyForClaude
+    case download, downloadPanelTitle
     case revealInFinder, delete
+    case editPrompt, promptSheetTitle, promptHint, promptReset, save
+    case defaultPrompt
     case record, pause, resume, stop
     case recording, paused, ready
     case checkingMic, loadingModel, starting, lookingForModel, finalizing
@@ -18,7 +21,7 @@ enum L {
     case untitledSession, noSpeechMarkdown, fallbackFileName
     case openTranscriptsFolder
     case quitTitle, quitBody, quitConfirm
-    case toastCopied, toastCopiedForClaude, toastExported
+    case toastCopied, toastCopiedForClaude, toastOpeningClaude, toastDownloaded
     case micDenied, noInputDevice
     case claudeHeader
 
@@ -47,14 +50,32 @@ enum L {
             return ("Copy", "Copier")
         case .copyTranscript:
             return ("Copy transcript", "Copier le transcript")
-        case .share:
-            return ("Share", "Partager")
-        case .openInClaude:
-            return ("Open in Claude", "Ouvrir dans Claude")
-        case .export:
-            return ("Export…", "Exporter…")
-        case .exportPanelTitle:
-            return ("Export transcript", "Exporter le transcript")
+        case .analyzeInClaude:
+            return ("Analyze in Claude", "Analyser dans Claude")
+        case .copyForClaude:
+            return ("Copy prompt + transcript", "Copier le prompt + le transcript")
+        case .download:
+            return ("Download", "Télécharger")
+        case .downloadPanelTitle:
+            return ("Download transcript", "Télécharger le transcript")
+        case .editPrompt:
+            return ("Edit prompt…", "Modifier le prompt…")
+        case .promptSheetTitle:
+            return ("Prompt sent to Claude", "Prompt envoyé à Claude")
+        case .promptHint:
+            return (
+                "This text goes above the transcript in the new Claude conversation. Nothing is sent until you press Enter there.",
+                "Ce texte est placé au-dessus du transcript dans la nouvelle conversation Claude. Rien n'est envoyé tant que tu n'appuies pas sur Entrée."
+            )
+        case .promptReset:
+            return ("Reset", "Réinitialiser")
+        case .save:
+            return ("Save", "Enregistrer")
+        case .defaultPrompt:
+            return (
+                "Analyze this transcript and write a summary.",
+                "Analyse ce transcript et fais-en un résumé."
+            )
         case .revealInFinder:
             return ("Reveal in Finder", "Afficher dans le Finder")
         case .delete:
@@ -117,9 +138,11 @@ enum L {
         case .toastCopied:
             return ("Text copied", "Texte copié")
         case .toastCopiedForClaude:
-            return ("Copied — paste into Claude", "Copié — colle-le dans Claude")
-        case .toastExported:
-            return ("File exported", "Fichier exporté")
+            return ("Too long for a link — copied, press ⌘V", "Trop long pour un lien — copié, fais ⌘V")
+        case .toastOpeningClaude:
+            return ("Opening Claude…", "Ouverture de Claude…")
+        case .toastDownloaded:
+            return ("File downloaded", "Fichier téléchargé")
         case .micDenied:
             return (
                 "Pyno has no access to the microphone. Open System Settings → Privacy & Security → Microphone and enable Pyno.",

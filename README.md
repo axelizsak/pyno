@@ -59,15 +59,20 @@ This is a deliberate choice, not system-locale or location detection.
 
 ### Getting a transcript out
 
-Toolbar and right-click menu on any session:
+An action row sits under the session title, and the same actions are on the
+right-click menu in the sidebar:
 
-- **Copy** — plain text on the clipboard. A small caption appears next to the pointer
-  to confirm it landed.
-- **Open in Claude** — copies the transcript with a short context header (title, date,
-  duration, language) and opens a new Claude conversation. Paste with ⌘V and ask
-  whatever you want; Pyno does not impose an analysis prompt.
-- **Export…** — saves a copy of the Markdown file anywhere you like.
+- **Analyze in Claude** — opens a new Claude conversation with the prompt *and* the
+  transcript already typed into the composer. Nothing is sent: review it, then press
+  Enter. The prompt is editable (button's ▾ menu → *Edit prompt…*), defaults to
+  "Analyze this transcript and write a summary." and is remembered.
+  Transcripts too long for a URL (roughly beyond 25 minutes of speech) are put on
+  the clipboard instead, and the caption says to press ⌘V.
+- **Download** — saves the Markdown file, defaulting to ~/Downloads.
+- **Copy** — plain text on the clipboard.
 - **Reveal in Finder** — the original file.
+
+Every one of these confirms with a small caption next to the pointer.
 
 ## Output format
 
@@ -102,7 +107,14 @@ Move, rename, or version these files freely.
 `dist/Pyno.dmg`. Both are ~10 MB — the model is not bundled, each machine downloads
 it on first launch.
 
-**With an Apple Developer account** (the smooth path — one link, no instructions):
+**Right now, unsigned.** `./scripts/make-dmg.sh` builds `dist/Pyno.dmg` with an
+Applications shortcut and an `OPEN ME FIRST.txt` in English and French. Send that
+file however you like. Be aware of what the recipient has to do: macOS 15 removed
+the old right-click → Open shortcut, so on a current Mac they must double-click,
+get refused, then go to System Settings → Privacy & Security → **Open Anyway**.
+It works, it is once per install, but it is not frictionless.
+
+**With an Apple Developer account** (the only genuinely one-click path):
 
 ```bash
 # one-time, stores an app-specific password in the keychain
@@ -118,9 +130,7 @@ download link — a public GitHub Release, Google Drive, Dropbox, iCloud Drive �
 send the link. The recipient opens it, drags Pyno to Applications, and launches it
 with no warning at all. **No website is needed.**
 
-**Without a Developer account**, the app is ad-hoc signed. It runs fine, but the
-first launch on someone else's Mac is blocked by Gatekeeper: they have to
-right-click → Open, then confirm. Or:
+If someone is comfortable in a terminal, one command also clears it:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Pyno.app
@@ -148,7 +158,9 @@ SessionStore → one .md file, rewritten on every paragraph
 | `Sources/Pyno/MicCapture.swift` | Microphone capture, level, device changes |
 | `Sources/Pyno/Recorder.swift` | State machine, ASR driving, paragraph splitting |
 | `Sources/Pyno/SessionStore.swift` | Markdown read/write |
-| `Sources/Pyno/TranscriptExport.swift` | Clipboard, file export, hand-off to Claude |
+| `Sources/Pyno/TranscriptExport.swift` | Clipboard, download, hand-off to Claude |
+| `Sources/Pyno/PromptStore.swift` | The editable prompt sent with the transcript |
+| `Sources/Pyno/Theme.swift` | Colors, level meter, the starburst mark |
 | `Sources/Pyno/Localization.swift` | Every user-facing string, English and French |
 | `Sources/Pyno/Toast.swift` | The small caption next to the pointer |
 | `Sources/Pyno/ContentView.swift` | Interface |
@@ -166,6 +178,8 @@ While recording, Pyno asks macOS not to sleep and not to nap the app
 | Dedicated English model (slightly better recall) | `AsrModels.downloadAndLoad(version: .v2)` plus `SlidingWindowAsrConfig(..., tdtConfig: TdtConfig(blankId: 1024))` |
 | More languages (25 European ones) | Add cases to `SessionLanguage` — v3 already handles them |
 | Store transcripts elsewhere | `SessionStore.init` |
+| Accent color | `Theme.orange` |
+| URL budget before falling back to the clipboard | `TranscriptExport.maxURLLength` |
 
 ## Known limits
 

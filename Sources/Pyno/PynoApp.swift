@@ -7,18 +7,25 @@ struct PynoApp: App {
     @StateObject private var store: SessionStore
     @StateObject private var recorder: Recorder
     @StateObject private var loc: Localization
+    @StateObject private var prompts: PromptStore
 
     init() {
         // A SwiftUI App's init runs on the main thread.
-        let (store, localization, recorder) = MainActor.assumeIsolated {
-            () -> (SessionStore, Localization, Recorder) in
+        let (store, localization, recorder, prompts) = MainActor.assumeIsolated {
+            () -> (SessionStore, Localization, Recorder, PromptStore) in
             let store = SessionStore()
             let localization = Localization()
-            return (store, localization, Recorder(store: store, localization: localization))
+            return (
+                store,
+                localization,
+                Recorder(store: store, localization: localization),
+                PromptStore(localization: localization)
+            )
         }
         _store = StateObject(wrappedValue: store)
         _loc = StateObject(wrappedValue: localization)
         _recorder = StateObject(wrappedValue: recorder)
+        _prompts = StateObject(wrappedValue: prompts)
     }
 
     var body: some Scene {
@@ -27,6 +34,7 @@ struct PynoApp: App {
                 .environmentObject(store)
                 .environmentObject(recorder)
                 .environmentObject(loc)
+                .environmentObject(prompts)
                 .frame(minWidth: 760, minHeight: 480)
                 .onAppear {
                     delegate.recorder = recorder

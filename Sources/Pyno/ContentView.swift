@@ -14,7 +14,7 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             SessionList(selection: $selection, onNew: presentNewSession)
-                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
+                .navigationSplitViewColumnWidth(min: 230, ideal: 270, max: 340)
         } detail: {
             VStack(spacing: 0) {
                 DetailPane(selection: $selection)
@@ -27,6 +27,7 @@ struct ContentView: View {
             }
         }
         .navigationTitle("")
+        .tint(Theme.orange)
         .sheet(isPresented: $showNewSession) {
             NewSessionSheet(title: $draftTitle, language: $draftLanguage) {
                 showNewSession = false
@@ -80,6 +81,7 @@ struct ContentView: View {
 private struct SessionList: View {
     @EnvironmentObject private var store: SessionStore
     @EnvironmentObject private var recorder: Recorder
+    @EnvironmentObject private var prompts: PromptStore
     @EnvironmentObject private var loc: Localization
     @Binding var selection: UUID?
     let onNew: () -> Void
@@ -91,9 +93,11 @@ private struct SessionList: View {
                     SessionRow(session: session, isLive: session.id == recorder.activeSessionID)
                         .tag(session.id)
                         .contextMenu {
+                            Button(loc[.analyzeInClaude]) {
+                                TranscriptExport.analyzeInClaude(session, prompt: prompts.prompt, loc)
+                            }
+                            Button(loc[.download]) { TranscriptExport.download(session, loc) }
                             Button(loc[.copyTranscript]) { TranscriptExport.copyPlainText(session, loc) }
-                            Button(loc[.openInClaude]) { TranscriptExport.openInClaude(session, loc) }
-                            Button(loc[.export]) { TranscriptExport.export(session, loc) }
                             Button(loc[.revealInFinder]) { TranscriptExport.reveal(session) }
                             Divider()
                             Button(loc[.delete], role: .destructive) {
@@ -118,24 +122,31 @@ private struct SessionList: View {
         }
         .overlay {
             if store.sessions.isEmpty {
-                ContentUnavailableView(
-                    loc[.noSessions],
-                    systemImage: "waveform",
-                    description: Text(loc[.noSessionsHint])
-                )
+                VStack(spacing: 10) {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 30, weight: .light))
+                        .foregroundStyle(Theme.orange.opacity(0.7))
+                    Text(loc[.noSessions]).font(.headline)
+                    Text(loc[.noSessionsHint])
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(24)
             }
         }
     }
 }
 
 private struct SessionRow: View {
-    @EnvironmentObject private var loc: Localization
     let session: Session
     let isLive: Bool
 
+    @State private var pulse = false
+
     var body: some View {
         HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(session.title)
                     .lineLimit(1)
                 Text("\(session.createdAt.formatted(date: .abbreviated, time: .shortened)) · \(Clock.short(session.duration))")
@@ -144,12 +155,17 @@ private struct SessionRow: View {
             }
             Spacer(minLength: 4)
             if isLive {
-                Circle().fill(.red).frame(width: 8, height: 8)
+                Circle()
+                    .fill(Theme.loud)
+                    .frame(width: 8, height: 8)
+                    .opacity(pulse ? 0.25 : 1)
+                    .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulse)
+                    .onAppear { pulse = true }
             } else {
                 Text(session.language.flag).font(.caption)
             }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
     }
 }
 
@@ -158,8 +174,11 @@ private struct SessionRow: View {
 private struct DetailPane: View {
     @EnvironmentObject private var store: SessionStore
     @EnvironmentObject private var recorder: Recorder
+    @EnvironmentObject private var prompts: PromptStore
     @EnvironmentObject private var loc: Localization
     @Binding var selection: UUID?
+
+    @State private var showPromptEditor = false
 
     private let scrollAnchor = "pyno-transcript-end"
 
@@ -172,32 +191,56 @@ private struct DetailPane: View {
             if let session = store.session(id: selection) {
                 transcript(for: session)
             } else {
-                ContentUnavailableView(
-                    loc[.nothingToShow],
-                    systemImage: "text.alignleft",
-                    description: Text(loc[.nothingToShowHint])
-                )
+                VStack(spacing: 10) {
+                    Image(systemName: "text.alignleft")
+                        .font(.system(size: 34, weight: .light))
+                        .foregroundStyle(Theme.orange.opacity(0.55))
+                    Text(loc[.nothingToShow]).font(.title3.weight(.medium))
+                    Text(loc[.nothingToShowHint])
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(40)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sheet(isPresented: $showPromptEditor) {
+            PromptSheet(isPresented: $showPromptEditor)
+        }
     }
 
     @ViewBuilder
     private func transcript(for session: Session) -> some View {
         let paragraphs = isLive ? recorder.liveTranscript : session.paragraphs
         let duration = isLive ? recorder.elapsed : session.duration
+        let hasText = !paragraphs.isEmpty
 
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(session.title)
-                    .font(.title2.weight(.semibold))
-                Text("\(session.createdAt.formatted(date: .long, time: .shortened)) · \(Clock.short(duration)) · \(session.language.flag) \(session.language.label)")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(session.title)
+                        .font(.title2.weight(.semibold))
+                    HStack(spacing: 8) {
+                        Text("\(session.createdAt.formatted(date: .long, time: .shortened)) · \(Clock.short(duration))")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Chip(text: "\(session.language.flag) \(session.language.label)")
+                    }
+                }
+
+                actionRow(for: session, enabled: hasText)
             }
             .padding(.horizontal, 24)
             .padding(.top, 20)
-            .padding(.bottom, 14)
+            .padding(.bottom, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                LinearGradient(
+                    colors: [Theme.orange.opacity(0.06), .clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
 
             Divider()
 
@@ -223,34 +266,62 @@ private struct DetailPane: View {
                 .onChange(of: paragraphs.count) { _, _ in scrollToEnd(proxy) }
                 .onChange(of: recorder.pendingText) { _, _ in if isLive { scrollToEnd(proxy) } }
                 .overlay {
-                    if paragraphs.isEmpty && recorder.pendingText.isEmpty {
+                    if !hasText && recorder.pendingText.isEmpty {
                         Text(isLive ? loc[.listening] : loc[.noSpeech])
                             .foregroundStyle(.tertiary)
                     }
                 }
             }
         }
-        .toolbar {
-            ToolbarItemGroup {
-                Button {
-                    TranscriptExport.copyPlainText(session, loc)
-                } label: {
-                    Label(loc[.copy], systemImage: "doc.on.doc")
-                }
-                .help(loc[.copyTranscript])
-                .disabled(paragraphs.isEmpty)
+    }
 
-                Menu {
-                    Button(loc[.openInClaude]) { TranscriptExport.openInClaude(session, loc) }
-                    Button(loc[.export]) { TranscriptExport.export(session, loc) }
-                    Divider()
-                    Button(loc[.revealInFinder]) { TranscriptExport.reveal(session) }
-                } label: {
-                    Label(loc[.share], systemImage: "square.and.arrow.up")
+    @ViewBuilder
+    private func actionRow(for session: Session, enabled: Bool) -> some View {
+        HStack(spacing: 10) {
+            Menu {
+                Button(loc[.editPrompt]) { showPromptEditor = true }
+                Button(loc[.copyForClaude]) {
+                    TranscriptExport.copyForClaude(session, prompt: prompts.prompt, loc)
                 }
-                .help(loc[.share])
+            } label: {
+                HStack(spacing: 7) {
+                    Burst(spokes: 8)
+                        .fill(.white)
+                        .frame(width: 13, height: 13)
+                    Text(loc[.analyzeInClaude])
+                }
+            } primaryAction: {
+                TranscriptExport.analyzeInClaude(session, prompt: prompts.prompt, loc)
             }
+            .menuStyle(.button)
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.claude)
+            .fixedSize()
+
+            Button {
+                TranscriptExport.download(session, loc)
+            } label: {
+                Label(loc[.download], systemImage: "arrow.down.circle")
+            }
+
+            Button {
+                TranscriptExport.copyPlainText(session, loc)
+            } label: {
+                Label(loc[.copy], systemImage: "doc.on.doc")
+            }
+
+            Button {
+                TranscriptExport.reveal(session)
+            } label: {
+                Image(systemName: "folder")
+            }
+            .help(loc[.revealInFinder])
+
+            Spacer(minLength: 0)
         }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .disabled(!enabled)
     }
 
     private func scrollToEnd(_ proxy: ScrollViewProxy) {
@@ -268,7 +339,7 @@ private struct ParagraphView: View {
         HStack(alignment: .firstTextBaseline, spacing: 14) {
             Text(Clock.stamp(paragraph.start))
                 .font(.system(.caption, design: .monospaced))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(Theme.orange.opacity(isProvisional ? 0.4 : 0.75))
                 .frame(width: 62, alignment: .trailing)
             Text(paragraph.text)
                 .font(.system(size: 15))
@@ -288,11 +359,16 @@ private struct TransportBar: View {
     let onTogglePause: () -> Void
     let onStop: () -> Void
 
+    @State private var pulse = false
+
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Button(action: onRecord) {
-                Label(loc[.record], systemImage: "record.circle")
+                Label(loc[.record], systemImage: "mic.fill")
+                    .frame(minWidth: 84)
             }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.orange)
             .disabled(recorder.phase != .idle)
             .keyboardShortcut("r", modifiers: .command)
 
@@ -302,14 +378,17 @@ private struct TransportBar: View {
                     systemImage: recorder.phase == .paused ? "play.fill" : "pause.fill"
                 )
             }
+            .buttonStyle(.bordered)
             .disabled(!recorder.phase.isActive)
 
             Button(action: onStop) {
                 Label(loc[.stop], systemImage: "stop.fill")
             }
+            .buttonStyle(.bordered)
+            .tint(Theme.loud)
             .disabled(!recorder.phase.isActive)
 
-            Divider().frame(height: 20)
+            Divider().frame(height: 22)
 
             statusArea
 
@@ -319,9 +398,9 @@ private struct TransportBar: View {
                 Text(Clock.short(recorder.elapsed))
                     .font(.system(.title3, design: .monospaced))
                     .monospacedDigit()
+                    .foregroundStyle(recorder.phase == .recording ? Theme.orangeDeep : .secondary)
             }
         }
-        .buttonStyle(.bordered)
         .controlSize(.large)
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
@@ -333,15 +412,19 @@ private struct TransportBar: View {
         switch recorder.phase {
         case .recording:
             HStack(spacing: 10) {
-                Circle().fill(.red).frame(width: 9, height: 9)
-                Text(loc[.recording])
-                LevelMeter(level: recorder.level)
+                Circle()
+                    .fill(Theme.loud)
+                    .frame(width: 9, height: 9)
+                    .opacity(pulse ? 0.3 : 1)
+                    .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulse)
+                    .onAppear { pulse = true }
+                Text(loc[.recording]).font(.callout.weight(.medium))
+                MicLevel(level: recorder.level)
             }
-            .font(.callout)
         case .paused:
-            Label(loc[.paused], systemImage: "pause.circle")
+            Label(loc[.paused], systemImage: "pause.circle.fill")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.orange)
         case .preparing:
             HStack(spacing: 10) {
                 ProgressView().controlSize(.small)
@@ -356,31 +439,17 @@ private struct TransportBar: View {
                 Text(recorder.status).font(.callout).foregroundStyle(.secondary)
             }
         case .idle:
-            Text(loc[.ready])
-                .font(.callout)
-                .foregroundStyle(.tertiary)
-        }
-    }
-}
-
-private struct LevelMeter: View {
-    let level: Float
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(0..<14, id: \.self) { index in
-                let threshold = Float(index) / 14
-                RoundedRectangle(cornerRadius: 1)
-                    .fill(level > threshold ? Color.accentColor : Color.secondary.opacity(0.22))
-                    .frame(width: 3, height: 4 + CGFloat(index) * 0.9)
+            HStack(spacing: 7) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Theme.quiet)
+                Text(loc[.ready]).font(.callout).foregroundStyle(.secondary)
             }
         }
-        .frame(height: 18, alignment: .bottom)
-        .animation(.linear(duration: 0.08), value: level)
     }
 }
 
-// MARK: - New session
+// MARK: - Sheets
 
 private struct NewSessionSheet: View {
     @EnvironmentObject private var loc: Localization
@@ -393,8 +462,12 @@ private struct NewSessionSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(loc[.newSession])
-                .font(.title3.weight(.semibold))
+            HStack(spacing: 9) {
+                Image(systemName: "waveform")
+                    .foregroundStyle(Theme.orange)
+                Text(loc[.newSession])
+                    .font(.title3.weight(.semibold))
+            }
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(loc[.titleField]).font(.callout).foregroundStyle(.secondary)
@@ -422,10 +495,62 @@ private struct NewSessionSheet: View {
                 Button(loc[.start], action: onStart)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent)
+                    .tint(Theme.orange)
             }
         }
         .padding(24)
         .frame(width: 400)
         .onAppear { focused = true }
+    }
+}
+
+private struct PromptSheet: View {
+    @EnvironmentObject private var prompts: PromptStore
+    @EnvironmentObject private var loc: Localization
+    @Binding var isPresented: Bool
+
+    @State private var draft = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 9) {
+                Burst(spokes: 8)
+                    .fill(Theme.claude)
+                    .frame(width: 15, height: 15)
+                Text(loc[.promptSheetTitle])
+                    .font(.title3.weight(.semibold))
+            }
+
+            TextEditor(text: $draft)
+                .font(.system(size: 13))
+                .frame(height: 96)
+                .padding(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.secondary.opacity(0.3))
+                )
+
+            Text(loc[.promptHint])
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack {
+                Button(loc[.promptReset]) { draft = loc[.defaultPrompt] }
+                Spacer()
+                Button(loc[.cancel], role: .cancel) { isPresented = false }
+                    .keyboardShortcut(.cancelAction)
+                Button(loc[.save]) {
+                    prompts.update(draft)
+                    isPresented = false
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.claude)
+            }
+        }
+        .padding(22)
+        .frame(width: 460)
+        .onAppear { draft = prompts.prompt }
     }
 }
