@@ -12,6 +12,7 @@ set -euo pipefail
 KEYDIR="$HOME/.pyno-signing"
 KEY="$KEYDIR/developer-id.key"
 CSR="$KEYDIR/developer-id.csr"
+DESKTOP_CSR="$HOME/Desktop/pyno-developer-id.csr"
 NOTARY_PROFILE="${NOTARY_PROFILE:-pyno-notary}"
 LOGIN_KEYCHAIN="$(security default-keychain | tr -d ' "')"
 
@@ -72,21 +73,25 @@ cmd_csr() {
     -subj "/emailAddress=$email/CN=$name/C=US" 2>/dev/null
   chmod 600 "$CSR"
 
+  # The keys live in a dot-directory, which Finder hides from the upload dialog.
+  # The request holds nothing secret, so put a copy somewhere draggable.
+  cp "$CSR" "$DESKTOP_CSR"
+
   echo
   bold "Next, on developer.apple.com (about two minutes)"
   cat <<INSTRUCTIONS
   1. Open https://developer.apple.com/account/resources/certificates/add
   2. Choose "Developer ID Application", then Continue.
      If asked about the profile type, choose "G2 Sub-CA (Xcode 11.4.1 or later)".
-  3. Upload this file:
-       $CSR
+  3. Upload the copy left on your desktop:
+       $DESKTOP_CSR
   4. Continue, then Download. You get developerID_application.cer.
   5. Come back and run:
        ./scripts/setup-signing.sh import ~/Downloads/developerID_application.cer
 INSTRUCTIONS
   echo
-  echo "Revealing the request in Finder…"
-  open -R "$CSR" 2>/dev/null || true
+  echo "Revealing it in Finder…"
+  open -R "$DESKTOP_CSR" 2>/dev/null || true
 }
 
 cmd_import() {
@@ -115,6 +120,8 @@ cmd_import() {
   security set-key-partition-list -S apple-tool:,apple:,codesign: \
     -s -k "" "$LOGIN_KEYCHAIN" >/dev/null 2>&1 \
     || echo "    (skipped — macOS will ask for your login password on the first signature)"
+
+  rm -f "$DESKTOP_CSR"
 
   echo
   local id; id="$(identity || true)"
