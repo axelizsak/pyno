@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pyno — live speech-to-text for Mac</title>
+<meta name="description" content="Live speech-to-text on Apple Silicon Macs. Fully local, free, no account. Built for lecture halls.">
+<link rel="icon" href="icon.png">
+<meta property="og:title" content="Pyno">
+<meta property="og:description" content="Live speech-to-text on Apple Silicon Macs. Fully local, free, no account.">
+<meta property="og:image" content="https://axelizsak.github.io/pyno/icon.png">
+<meta property="og:url" content="https://axelizsak.github.io/pyno/">
+<meta name="twitter:card" content="summary">
+<style>
+:root {
+  --bg: #fbfaf8;
+  --panel: #ffffff;
+  --ink: #1a1815;
+  --muted: #6d6862;
+  --line: #e7e2da;
+  --accent: #f27821;
+  --accent-deep: #e05408;
+  --accent-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141311;
+    --panel: #1d1b18;
+    --ink: #f2efea;
+    --muted: #9b948b;
+    --line: #2e2b26;
+    --accent: #f9853a;
+    --accent-deep: #f27821;
+    --accent-ink: #17140f;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  padding: 0 24px;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.6 ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 620px; margin: 0 auto; padding-block: 88px 64px; }
+
+.icon {
+  width: 96px; height: 96px; display: block;
+  border-radius: 22px;
+  margin-bottom: 30px;
+}
+h1 {
+  font-size: 40px; line-height: 1.1; letter-spacing: -0.022em;
+  font-weight: 640; margin: 0 0 14px;
+}
+.lede { font-size: 19px; line-height: 1.5; margin: 0 0 10px; }
+.sub { font-size: 17px; color: var(--muted); margin: 0 0 36px; max-width: 34em; }
+
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; }
+.download {
+  display: inline-block;
+  background: var(--accent); color: var(--accent-ink);
+  font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+  text-decoration: none;
+  padding: 13px 26px; border-radius: 10px;
+  transition: background 0.15s ease;
+}
+.download:hover { background: var(--accent-deep); }
+.source { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+.source:hover { color: var(--ink); }
+
+.meta { font-size: 14px; color: var(--muted); margin: 18px 0 0; }
+
+hr { border: 0; border-top: 1px solid var(--line); margin: 56px 0; }
+
+h2 {
+  font-size: 13px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 22px;
+}
+dl { margin: 0; }
+dt { font-weight: 600; margin-top: 26px; letter-spacing: -0.01em; }
+dt:first-of-type { margin-top: 0; }
+dd { margin: 5px 0 0; color: var(--muted); }
+
+ol { margin: 0; padding-left: 1.3em; color: var(--muted); }
+ol li { margin-bottom: 9px; }
+ol li strong { color: var(--ink); font-weight: 600; }
+
+footer {
+  margin-top: 56px; padding-top: 26px; border-top: 1px solid var(--line);
+  font-size: 14px; color: var(--muted);
+}
+footer a { color: var(--muted); }
+footer p { margin: 0 0 8px; }
+
+@media (max-width: 520px) {
+  main { padding-block: 56px 48px; }
+  h1 { font-size: 32px; }
+  .lede { font-size: 18px; }
+  .download { display: block; text-align: center; }
+  .actions { gap: 16px; }
+}
+</style>
+</head>
+<body>
+<main>
+
+  <img class="icon" src="icon.png" alt="Pyno" width="96" height="96">
+
+  <h1>Pyno</h1>
+
+  <p class="lede">Live speech-to-text on your Mac. Fully local, free, no account.</p>
+
+  <p class="sub">
+    Built for lecture halls. Start it when the lecturer starts, stop it at the end,
+    walk out with the hour already written up.
+  </p>
+
+  <div class="actions">
+    <a class="download" href="https://github.com/axelizsak/pyno/releases/latest/download/Pyno.dmg">
+      Download for Mac
+    </a>
+    <a class="source" href="https://github.com/axelizsak/pyno">View the source</a>
+  </div>
+
+  <p class="meta">
+    Version 1.0.1 · 10 MB · Apple Silicon, macOS 14 or later<br>
+    Signed and notarized by Apple, so it opens on the first double-click.
+  </p>
+
+  <hr>
+
+  <h2>What it does</h2>
+  <dl>
+    <dt>Nothing leaves the machine</dt>
+    <dd>
+      Transcription runs on the Apple Neural Engine, not a server. No account, no
+      subscription, no upload. It works exactly the same with the Wi-Fi off.
+    </dd>
+
+    <dt>Long sessions are the normal case</dt>
+    <dd>
+      Two and three hour recordings are what it was tuned for. The transcript is
+      written to disk as it goes, so a crash costs a paragraph, not a lecture.
+    </dd>
+
+    <dt>You end up with plain Markdown</dt>
+    <dd>
+      One file per session in your Documents folder. Read it, move it, rename it,
+      or hand it to Claude for a summary. There is no database and no lock-in.
+    </dd>
+
+    <dt>It speaks 25 European languages</dt>
+    <dd>
+      NVIDIA Parakeet TDT v3 through Core ML. The interface follows the language you
+      pick, in English or French.
+    </dd>
+  </dl>
+
+  <hr>
+
+  <h2>Getting started</h2>
+  <ol>
+    <li><strong>Open the disk image</strong> and drag Pyno to Applications.</li>
+    <li><strong>Allow the microphone</strong> when macOS asks on first launch.</li>
+    <li><strong>Wait once</strong> while the speech model downloads, about 470 MB.
+        Everything after that is offline and instant.</li>
+  </ol>
+
+  <footer>
+    <p>MIT licensed. Fork it, change it, ship it.</p>
+    <p>
+      Built on <a href="https://github.com/FluidInference/FluidAudio">FluidAudio</a>,
+      running Parakeet models converted from NVIDIA NeMo.
+    </p>
+  </footer>
+
+</main>
+</body>
+</html>
