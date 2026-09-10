@@ -69,7 +69,10 @@ gh api -X PATCH "repos/$REPO" -f "homepage=$NEW_URL" >/dev/null
 echo "==> Waiting for the certificate (this can take up to an hour)"
 for i in $(seq 1 40); do
   state="$(gh api "repos/$REPO/pages" --jq '.https_certificate.state // "pending"' 2>/dev/null || echo pending)"
-  code="$(curl -s -o /dev/null -w '%{http_code}' "$NEW_URL" || echo 000)"
+  # Pin the request to a GitHub Pages address: this machine's resolver can still be
+  # serving the pre-purchase answer long after the domain works for everyone else.
+  code="$(curl -s -o /dev/null -w '%{http_code}' \
+    --resolve "$DOMAIN:443:185.199.108.153" "$NEW_URL" --max-time 15 || echo 000)"
   echo "    attempt $i: certificate=$state http=$code"
   if [ "$code" = "200" ]; then
     gh api -X PUT "repos/$REPO/pages" -F "https_enforced=true" >/dev/null 2>&1 || true
