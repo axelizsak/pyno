@@ -188,11 +188,20 @@ cmd_notary_key() {
   key_id="${KEY_ID:-$(basename "$key" | sed -n 's/^AuthKey_\(.*\)\.p8$/\1/p')}"
   issuer="${ISSUER:-}"
 
+  # Prompting only works from a real terminal; anywhere else it would hang forever.
+  if [ -z "$key_id" ] || [ -z "$issuer" ]; then
+    if [ ! -t 0 ]; then
+      echo "error: this needs the Issuer ID, which only appears on the web page." >&2
+      echo "       Copy the UUID above the key list, then rerun as:" >&2
+      echo "       ISSUER=<uuid> ./scripts/setup-signing.sh notary-key $key" >&2
+      exit 1
+    fi
+  fi
   if [ -z "$key_id" ]; then
     read -r -p "Key ID (10 characters, shown next to the key): " key_id
   fi
   if [ -z "$issuer" ]; then
-    echo "The Issuer ID is a UUID at the top of the Integrations > Keys page."
+    echo "The Issuer ID is the UUID above the key list, on the same page."
     read -r -p "Issuer ID: " issuer
   fi
 
