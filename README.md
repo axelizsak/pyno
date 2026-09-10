@@ -16,9 +16,10 @@ use low and means it works just as well with the Wi-Fi off.
 
 ## Download
 
-**[Pyno 1.0.1](https://github.com/axelizsak/pyno/releases/latest)** — open the disk
-image, drag Pyno to Applications. Signed and notarized by Apple, so it opens on the
-first double-click with no security warning.
+**[pyno on the web](https://axelizsak.github.io/pyno/)** is the link to hand out.
+Or take **[the disk image](https://github.com/axelizsak/pyno/releases/latest)**
+directly: open it, drag Pyno to Applications. Signed and notarized by Apple, so it
+opens on the first double-click with no security warning.
 
 Apple Silicon (M1 or newer), macOS 14 or later. Intel Macs cannot run it: Parakeet
 needs the Neural Engine. On first launch macOS asks for the microphone, and Pyno
