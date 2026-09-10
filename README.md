@@ -16,7 +16,7 @@ use low and means it works just as well with the Wi-Fi off.
 
 ## Download
 
-**[pyno on the web](https://axelizsak.github.io/pyno/)** is the link to hand out.
+**[pyno on the web](https://pyno.dev/)** is the link to hand out.
 Or take **[the disk image](https://github.com/axelizsak/pyno/releases/latest)**
 directly: open it, drag Pyno to Applications. Signed and notarized by Apple, so it
 opens on the first double-click with no security warning.
