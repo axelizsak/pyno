@@ -2,9 +2,9 @@
 
 Live speech-to-text on Apple Silicon Macs. Fully local, free, no account.
 
-Built for lecture halls: start it when the lecturer starts, stop it at the end, walk
-out with the hour already written up. Two and three hour sessions are the ordinary
-case, not the stress test.
+Built for lecture halls. Record the whole class and the full transcript is written
+and saved by the time it ends. Two and three hour sessions are the ordinary case,
+not the stress test.
 
 Start a session, give it a title, hit Record. Pyno listens to the microphone and
 writes the text as it goes. When you stop, the session is a clean Markdown file in
