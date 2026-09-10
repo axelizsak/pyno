@@ -8,9 +8,9 @@
 <link rel="icon" href="icon.png">
 <meta property="og:title" content="Pyno">
 <meta property="og:description" content="Live speech-to-text on Apple Silicon Macs. Fully local, free, no account.">
-<meta property="og:image" content="https://axelizsak.github.io/pyno/icon.png">
+<meta property="og:image" content="https://axelizsak.github.io/pyno/screenshot.png">
 <meta property="og:url" content="https://axelizsak.github.io/pyno/">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <style>
 :root {
   --bg: #fbfaf8;
@@ -21,6 +21,7 @@
   --accent: #f27821;
   --accent-deep: #e05408;
   --accent-ink: #ffffff;
+  --shadow: 0 18px 44px -18px rgba(40, 28, 14, 0.28);
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -32,150 +33,152 @@
     --accent: #f9853a;
     --accent-deep: #f27821;
     --accent-ink: #17140f;
+    --shadow: 0 18px 44px -18px rgba(0, 0, 0, 0.7);
   }
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  padding: 0 24px;
+  padding: 0 28px;
   background: var(--bg);
   color: var(--ink);
-  font: 16px/1.6 ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+  font: 15px/1.55 ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text",
         "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-main { max-width: 620px; margin: 0 auto; padding-block: 88px 64px; }
+main { max-width: 1080px; margin: 0 auto; padding-block: 46px 40px; }
 
-.icon {
-  width: 96px; height: 96px; display: block;
-  border-radius: 22px;
-  margin-bottom: 30px;
+/* Hero: copy on the left, the app on the right, so both land in the first screen. */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: 56px;
+  align-items: center;
 }
+
+.icon { width: 60px; height: 60px; display: block; margin-bottom: 20px; }
 h1 {
-  font-size: 40px; line-height: 1.1; letter-spacing: -0.022em;
-  font-weight: 640; margin: 0 0 14px;
+  font-size: 34px; line-height: 1.05; letter-spacing: -0.025em;
+  font-weight: 640; margin: 0 0 12px;
 }
-.lede { font-size: 19px; line-height: 1.5; margin: 0 0 10px; }
-.sub { font-size: 17px; color: var(--muted); margin: 0 0 36px; max-width: 34em; }
+.lede { font-size: 17px; line-height: 1.45; margin: 0 0 8px; letter-spacing: -0.01em; }
+.sub { font-size: 15px; color: var(--muted); margin: 0 0 26px; }
 
-.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
 .download {
   display: inline-block;
   background: var(--accent); color: var(--accent-ink);
-  font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
   text-decoration: none;
-  padding: 13px 26px; border-radius: 10px;
+  padding: 12px 24px; border-radius: 10px;
   transition: background 0.15s ease;
 }
 .download:hover { background: var(--accent-deep); }
 .source { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
 .source:hover { color: var(--ink); }
+.meta { font-size: 13px; color: var(--muted); margin: 16px 0 0; }
 
-.meta { font-size: 14px; color: var(--muted); margin: 18px 0 0; }
-
-hr { border: 0; border-top: 1px solid var(--line); margin: 56px 0; }
-
-h2 {
-  font-size: 13px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
-  color: var(--muted); margin: 0 0 22px;
+.shot {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background: var(--panel);
+  line-height: 0;
 }
-dl { margin: 0; }
-dt { font-weight: 600; margin-top: 26px; letter-spacing: -0.01em; }
-dt:first-of-type { margin-top: 0; }
-dd { margin: 5px 0 0; color: var(--muted); }
+.shot img { width: 100%; height: auto; display: block; }
 
-ol { margin: 0; padding-left: 1.3em; color: var(--muted); }
-ol li { margin-bottom: 9px; }
-ol li strong { color: var(--ink); font-weight: 600; }
+/* Four short claims, one line each, sitting just under the fold. */
+.points {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+.points h2 {
+  font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+  margin: 0 0 5px; color: var(--ink);
+}
+.points p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
 
 footer {
-  margin-top: 56px; padding-top: 26px; border-top: 1px solid var(--line);
-  font-size: 14px; color: var(--muted);
+  margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--line);
+  font-size: 13px; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 6px 22px;
 }
 footer a { color: var(--muted); }
-footer p { margin: 0 0 8px; }
 
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: 36px; }
+  .points { grid-template-columns: repeat(2, 1fr); gap: 26px 32px; }
+}
 @media (max-width: 520px) {
-  main { padding-block: 56px 48px; }
-  h1 { font-size: 32px; }
-  .lede { font-size: 18px; }
+  body { padding: 0 20px; }
+  main { padding-block: 40px 36px; }
+  h1 { font-size: 30px; }
+  .points { grid-template-columns: 1fr; }
   .download { display: block; text-align: center; }
-  .actions { gap: 16px; }
 }
 </style>
 </head>
 <body>
 <main>
 
-  <img class="icon" src="icon.png" alt="Pyno" width="96" height="96">
+  <div class="hero">
+    <div>
+      <img class="icon" src="icon.png" alt="Pyno" width="60" height="60">
+      <h1>Pyno</h1>
+      <p class="lede">Live speech-to-text on your Mac. Fully local, free, no account.</p>
+      <p class="sub">
+        Built for lecture halls. Start it when the lecturer starts, stop it at the
+        end, walk out with the hour already written up.
+      </p>
 
-  <h1>Pyno</h1>
+      <div class="actions">
+        <a class="download" href="https://github.com/axelizsak/pyno/releases/latest/download/Pyno.dmg">
+          Download for Mac
+        </a>
+        <a class="source" href="https://github.com/axelizsak/pyno">View the source</a>
+      </div>
 
-  <p class="lede">Live speech-to-text on your Mac. Fully local, free, no account.</p>
+      <p class="meta">
+        Version 1.0.1 · 10 MB · Apple Silicon, macOS 14 or later<br>
+        Notarized by Apple. Opens on the first double-click.
+      </p>
+    </div>
 
-  <p class="sub">
-    Built for lecture halls. Start it when the lecturer starts, stop it at the end,
-    walk out with the hour already written up.
-  </p>
-
-  <div class="actions">
-    <a class="download" href="https://github.com/axelizsak/pyno/releases/latest/download/Pyno.dmg">
-      Download for Mac
-    </a>
-    <a class="source" href="https://github.com/axelizsak/pyno">View the source</a>
+    <figure class="shot">
+      <img src="screenshot.png" alt="Pyno recording a session, with the transcript building underneath"
+           width="1720" height="1180">
+    </figure>
   </div>
 
-  <p class="meta">
-    Version 1.0.1 · 10 MB · Apple Silicon, macOS 14 or later<br>
-    Signed and notarized by Apple, so it opens on the first double-click.
-  </p>
-
-  <hr>
-
-  <h2>What it does</h2>
-  <dl>
-    <dt>Nothing leaves the machine</dt>
-    <dd>
-      Transcription runs on the Apple Neural Engine, not a server. No account, no
-      subscription, no upload. It works exactly the same with the Wi-Fi off.
-    </dd>
-
-    <dt>Long sessions are the normal case</dt>
-    <dd>
-      Two and three hour recordings are what it was tuned for. The transcript is
-      written to disk as it goes, so a crash costs a paragraph, not a lecture.
-    </dd>
-
-    <dt>You end up with plain Markdown</dt>
-    <dd>
-      One file per session in your Documents folder. Read it, move it, rename it,
-      or hand it to Claude for a summary. There is no database and no lock-in.
-    </dd>
-
-    <dt>It speaks 25 European languages</dt>
-    <dd>
-      NVIDIA Parakeet TDT v3 through Core ML. The interface follows the language you
-      pick, in English or French.
-    </dd>
-  </dl>
-
-  <hr>
-
-  <h2>Getting started</h2>
-  <ol>
-    <li><strong>Open the disk image</strong> and drag Pyno to Applications.</li>
-    <li><strong>Allow the microphone</strong> when macOS asks on first launch.</li>
-    <li><strong>Wait once</strong> while the speech model downloads, about 470 MB.
-        Everything after that is offline and instant.</li>
-  </ol>
+  <div class="points">
+    <div>
+      <h2>Nothing leaves the Mac</h2>
+      <p>Transcription runs on the Neural Engine. It works the same with the Wi-Fi off.</p>
+    </div>
+    <div>
+      <h2>Made for long sessions</h2>
+      <p>Two and three hour recordings, written to disk as they go.</p>
+    </div>
+    <div>
+      <h2>Plain Markdown out</h2>
+      <p>One file per session in your Documents folder. No database, no lock-in.</p>
+    </div>
+    <div>
+      <h2>25 European languages</h2>
+      <p>NVIDIA Parakeet TDT v3 through Core ML, in English or French.</p>
+    </div>
+  </div>
 
   <footer>
-    <p>MIT licensed. Fork it, change it, ship it.</p>
-    <p>
-      Built on <a href="https://github.com/FluidInference/FluidAudio">FluidAudio</a>,
-      running Parakeet models converted from NVIDIA NeMo.
-    </p>
+    <span>MIT licensed. Fork it, change it, ship it.</span>
+    <span>Built on <a href="https://github.com/FluidInference/FluidAudio">FluidAudio</a>.</span>
   </footer>
 
 </main>
