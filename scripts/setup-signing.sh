@@ -5,6 +5,7 @@
 #   ./scripts/setup-signing.sh csr             make the key + signing request
 #   ./scripts/setup-signing.sh import <.cer>   install the certificate Apple gave back
 #   ./scripts/setup-signing.sh notary          store the notarization password
+#   ./scripts/setup-signing.sh notary-key <.p8> store an App Store Connect API key
 #
 # The private key lives in ~/.pyno-signing and never enters the repository.
 set -euo pipefail
@@ -157,14 +158,46 @@ cmd_notary() {
 
   bold "App-specific password"
   cat <<INSTRUCTIONS
-  Notarization will not accept your normal Apple password.
-  Create a throwaway one at https://account.apple.com
+  Notarization will not accept your normal Apple password. It wants an
+  app-specific one, from https://account.apple.com
     > Sign-In and Security > App-Specific Passwords > +
-  Name it "pyno notary". Copy the xxxx-xxxx-xxxx-xxxx string, then paste it below.
+
+  It looks like abcd-efgh-ijkl-mnop. Paste it whole, dashes included. Nothing
+  echoes as you type, and it is shown once — if you closed that panel, the old
+  one is unrecoverable and you need a new one.
+
+  If this keeps failing, use an App Store Connect API key instead:
+    ./scripts/setup-signing.sh notary-key ~/Downloads/AuthKey_XXXXXXXXXX.p8
 
 INSTRUCTIONS
   xcrun notarytool store-credentials "$NOTARY_PROFILE" \
     --apple-id "$apple_id" --team-id "$team_id"
+
+  echo
+  bold "Stored as keychain profile '$NOTARY_PROFILE'."
+  cmd_status
+}
+
+cmd_notary_key() {
+  local key="${1:-}"
+  [ -n "$key" ] || { echo "usage: setup-signing.sh notary-key <AuthKey_XXXXXXXXXX.p8>" >&2; exit 1; }
+  [ -f "$key" ] || { echo "error: $key not found" >&2; exit 1; }
+
+  local key_id issuer
+  # The file Apple hands you is named AuthKey_<the key id>.p8.
+  key_id="${KEY_ID:-$(basename "$key" | sed -n 's/^AuthKey_\(.*\)\.p8$/\1/p')}"
+  issuer="${ISSUER:-}"
+
+  if [ -z "$key_id" ]; then
+    read -r -p "Key ID (10 characters, shown next to the key): " key_id
+  fi
+  if [ -z "$issuer" ]; then
+    echo "The Issuer ID is a UUID at the top of the Integrations > Keys page."
+    read -r -p "Issuer ID: " issuer
+  fi
+
+  xcrun notarytool store-credentials "$NOTARY_PROFILE" \
+    --key "$key" --key-id "$key_id" --issuer "$issuer"
 
   echo
   bold "Stored as keychain profile '$NOTARY_PROFILE'."
@@ -176,5 +209,6 @@ case "${1:-status}" in
   csr)    cmd_csr ;;
   import) shift; cmd_import "${1:-}" ;;
   notary) cmd_notary ;;
-  *) echo "usage: setup-signing.sh [status|csr|import <.cer>|notary]" >&2; exit 1 ;;
+  notary-key) shift; cmd_notary_key "${1:-}" ;;
+  *) echo "usage: setup-signing.sh [status|csr|import <.cer>|notary|notary-key <.p8>]" >&2; exit 1 ;;
 esac
