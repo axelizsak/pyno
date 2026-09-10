@@ -1,39 +1,53 @@
 # Pyno
 
-Live speech-to-text on Apple Silicon Macs. Fully local, free, no account.
+Pyno writes down what it hears, live, on your Mac.
 
-Start a session, give it a title, hit Record. Pyno listens to the microphone and
-writes the text as it goes. When you stop, the session is a clean Markdown file in
-`~/Documents/Pyno/` — ready to paste into Claude or read as-is.
+It was built for the back of a lecture hall. You start it when the lecturer starts,
+you stop it at the end, and you walk out with the whole hour already written up
+instead of half-copied notes and the parts you missed while writing. A two or three
+hour lecture is the ordinary case here, not the stress test.
 
-Nothing is uploaded during transcription. The model (NVIDIA Parakeet TDT v3, 0.6 B)
-runs on the **Apple Neural Engine** through Core ML, which is what keeps battery
-usage low across two- and three-hour sessions.
+Everything happens on the machine in front of you. No account, no subscription, no
+upload, and it behaves exactly the same with the Wi-Fi switched off, which matters
+in a room where two hundred people are fighting over the same access point. The
+speech model runs on the Apple Neural Engine rather than the processor, so a full
+morning of it barely moves the battery.
 
----
+## Download
 
-## Requirements
+**[Pyno 1.0.1](https://github.com/axelizsak/pyno/releases/latest)** — open the disk
+image, drag Pyno to Applications, done. It is signed and notarized by Apple, so it
+opens on the first double-click with no security warning.
 
-- **Apple Silicon** Mac (M1 or newer — developed on an M2 Pro)
-- **macOS 14** or later
-- Swift 6.1, from the Command Line Tools: `xcode-select --install`
+Requires an Apple Silicon Mac (M1 or newer) on macOS 14 or later. Intel Macs cannot
+run it: the model needs the Neural Engine, which they do not have.
 
+On first launch:
+1. macOS asks for microphone access. Allow it.
+2. Pyno downloads its speech model once, about 470 MB, into
+   `~/Library/Application Support/FluidAudio/Models/`. The bottom bar shows progress.
+
+Everything after that is offline and instant.
+
+## What you get
+
+Start a session, give it a title, hit Record. The text appears as it is spoken. When
+you stop, the session is a clean Markdown file in `~/Documents/Pyno/`, ready to read
+as it is or to paste into Claude.
+
+The model is NVIDIA Parakeet TDT v3, 0.6 billion parameters, converted to Core ML.
+It handles 25 European languages.
+
+## Building it yourself
+
+You need the Command Line Tools, `xcode-select --install`, which include Swift 6.1.
 Full Xcode is not required.
-
-## Run it
 
 ```bash
 ./run.sh
 ```
 
-Builds, assembles `dist/Pyno.app`, and opens it.
-
-On first launch:
-1. macOS asks for microphone access → **Allow**.
-2. Pyno downloads the Parakeet model (~470 MB, once) into
-   `~/Library/Application Support/FluidAudio/Models/`. Progress shows in the bottom bar.
-
-Everything after that is offline and instant.
+That builds, assembles `dist/Pyno.app`, and opens it.
 
 ## Using it
 
@@ -148,8 +162,6 @@ on first launch.
 then carries an `OPEN ME FIRST.txt` in English and French. But the recipient has to
 double-click, get refused, and go to System Settings → Privacy & Security →
 **Open Anyway**. It works. It is not something to hand a stranger.
-
-The app is **arm64 only**: Parakeet needs the Neural Engine, which Intel Macs lack.
 
 ## How it works
 
