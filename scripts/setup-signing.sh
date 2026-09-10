@@ -114,12 +114,17 @@ cmd_import() {
     -T /usr/bin/codesign -T /usr/bin/security 2>/dev/null || true
 
   echo "==> Importing the certificate"
-  security import "$cer" -k "$LOGIN_KEYCHAIN" -T /usr/bin/codesign
+  # Downloading a .cer in Safari, or double-clicking it, already files it in the
+  # keychain. That makes a second import a duplicate, which is fine — what matters
+  # is the identity check below, not who put the certificate there.
+  security import "$cer" -k "$LOGIN_KEYCHAIN" -T /usr/bin/codesign 2>&1 \
+    | grep -v "already exists in the keychain" || true
 
-  echo "==> Allowing codesign to use the key without a prompt each time"
-  security set-key-partition-list -S apple-tool:,apple:,codesign: \
-    -s -k "" "$LOGIN_KEYCHAIN" >/dev/null 2>&1 \
-    || echo "    (skipped — macOS will ask for your login password on the first signature)"
+  echo "==> Allowing codesign to use the key"
+  if ! security set-key-partition-list -S apple-tool:,apple:,codesign: \
+       -s -k "" "$LOGIN_KEYCHAIN" >/dev/null 2>&1; then
+    echo "    macOS will ask once, on the first signature. Click Always Allow."
+  fi
 
   rm -f "$DESKTOP_CSR"
 
