@@ -45,18 +45,31 @@ done
 shopt -u nullglob
 
 echo "==> Signing"
+# Any nested bundle that carries its own Info.plist has to be signed before the app
+# around it. SwiftPM resource bundles usually carry none — they are plain folders of
+# data files, which codesign refuses to treat as bundles and the app seals as
+# ordinary resources instead.
+sign_nested() {
+  shopt -s nullglob
+  for nested in "$CONTENTS/Resources"/*.bundle; do
+    [ -f "$nested/Info.plist" ] || [ -f "$nested/Contents/Info.plist" ] || continue
+    codesign "$@" "$nested"
+  done
+  shopt -u nullglob
+}
+
 if [ -n "${DEVELOPER_ID:-}" ]; then
-  codesign --force --deep --timestamp --options runtime \
+  sign_nested --force --timestamp --options runtime --sign "$DEVELOPER_ID"
+  codesign --force --timestamp --options runtime \
     --entitlements Resources/Pyno.entitlements \
     --sign "$DEVELOPER_ID" "$APP"
-  echo "    signed with $DEVELOPER_ID (hardened runtime) — ready to notarize:"
-  echo "    xcrun notarytool submit dist/Pyno.zip --keychain-profile <profile> --wait"
-  echo "    xcrun stapler staple $APP"
+  echo "    signed with $DEVELOPER_ID (hardened runtime)"
 else
-  codesign --force --deep --sign - "$APP"
-  echo "    ad-hoc signature (no Developer ID)"
+  sign_nested --force --sign -
+  codesign --force --sign - "$APP"
+  echo "    ad-hoc signature (no Developer ID) — other Macs will refuse to open this"
 fi
-codesign --verify --verbose=2 "$APP"
+codesign --verify --strict --verbose=2 "$APP"
 
 echo "==> Archiving"
 rm -f dist/Pyno.zip

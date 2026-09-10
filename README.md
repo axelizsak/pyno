@@ -101,40 +101,53 @@ _September 8, 2026 at 2:30 PM · 1:30:12 · English_
 The YAML header is also how the app reloads a session: the folder *is* the database.
 Move, rename, or version these files freely.
 
-## Giving the app to someone else
+## Distribution
 
-`./scripts/build-app.sh` produces `dist/Pyno.zip`; `./scripts/make-dmg.sh` produces
-`dist/Pyno.dmg`. Both are ~10 MB — the model is not bundled, each machine downloads
-it on first launch.
+Pyno ships the way MacParakeet, Whisper Notes and the rest of this category ship: a
+signed, notarized disk image on a plain download link. **Not the Mac App Store.**
+The store would put the app in a sandbox, which moves `~/Documents/Pyno/` into a
+private container the user cannot browse — and that folder being an ordinary,
+movable pile of Markdown files is the whole idea. Every update would also wait on
+review. Notarization gives the same one-click install with none of that.
 
-**Right now, unsigned.** `./scripts/make-dmg.sh` builds `dist/Pyno.dmg` with an
-Applications shortcut and an `OPEN ME FIRST.txt` in English and French. Send that
-file however you like. Be aware of what the recipient has to do: macOS 15 removed
-the old right-click → Open shortcut, so on a current Mac they must double-click,
-get refused, then go to System Settings → Privacy & Security → **Open Anyway**.
-It works, it is once per install, but it is not frictionless.
-
-**With an Apple Developer account** (the only genuinely one-click path):
+### One-time setup
 
 ```bash
-# one-time, stores an app-specific password in the keychain
-xcrun notarytool store-credentials pyno-notary \
-  --apple-id you@example.com --team-id TEAMID --password <app-specific-password>
-
-DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)" ./scripts/release.sh
+./scripts/setup-signing.sh csr      # makes the key and the request
+# upload the request at developer.apple.com, download the certificate
+./scripts/setup-signing.sh import ~/Downloads/developerID_application.cer
+./scripts/setup-signing.sh notary   # stores an app-specific password
+./scripts/setup-signing.sh status   # confirms both are in place
 ```
 
-That builds, signs with the hardened runtime, packages a `.dmg`, notarizes it with
-Apple, and staples the ticket. Upload the `.dmg` anywhere that serves a plain
-download link — a public GitHub Release, Google Drive, Dropbox, iCloud Drive — and
-send the link. The recipient opens it, drags Pyno to Applications, and launches it
-with no warning at all. **No website is needed.**
+An Apple Developer Program membership is required: the certificate type is issued
+only to paid accounts.
 
-If someone is comfortable in a terminal, one command also clears it:
+### Cutting a release
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/Pyno.app
+./scripts/release.sh              # build, sign, notarize, staple, verify
+./scripts/release.sh --publish    # the same, plus tag and upload to GitHub Releases
 ```
+
+The version comes from `CFBundleShortVersionString` in `Resources/Info.plist`, and
+the tag from the version. Bump it there before publishing.
+
+The app is notarized and stapled before the disk image is built, so the ticket lives
+inside the bundle: a copy dragged out of the image opens even on a Mac that is
+offline. The script then verifies exactly what Gatekeeper checks and prints the
+SHA-256. The recipient opens the image, drags Pyno to Applications, and launches it
+with no warning of any kind.
+
+`dist/Pyno.dmg` is about 10 MB — the model is not bundled, each machine downloads it
+on first launch.
+
+### Without a certificate
+
+`./scripts/build-app.sh` and `./scripts/make-dmg.sh` still work, and the disk image
+then carries an `OPEN ME FIRST.txt` in English and French. But the recipient has to
+double-click, get refused, and go to System Settings → Privacy & Security →
+**Open Anyway**. It works. It is not something to hand a stranger.
 
 The app is **arm64 only**: Parakeet needs the Neural Engine, which Intel Macs lack.
 

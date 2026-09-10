@@ -68,4 +68,13 @@ hdiutil create \
   "$DMG" >/dev/null
 
 rm -rf "$STAGING"
+
+# Notarization accepts an unsigned disk image, but a signed one also survives being
+# renamed or re-hosted, so sign it whenever an identity is available.
+if [ -n "${DEVELOPER_ID:-}" ]; then
+  echo "==> Signing the disk image"
+  codesign --force --timestamp --sign "$DEVELOPER_ID" "$DMG"
+  codesign --verify --verbose=2 "$DMG"
+fi
+
 echo "Done: $DMG ($(du -h "$DMG" | cut -f1))"
