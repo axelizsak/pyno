@@ -27,8 +27,13 @@ bold() { printf '\033[1m%s\033[0m\n' "$*"; }
 
 echo "==> Checking that $DOMAIN points at GitHub Pages"
 GH_IPS="185.199.108.153 185.199.109.153 185.199.110.153 185.199.111.153"
+# The local resolver may still be caching the pre-purchase answer, so fall back to
+# a public one before concluding the records are missing.
 RESOLVED="$(dig +short "$DOMAIN" A | sort | tr '\n' ' ')"
-if [ -z "$RESOLVED" ]; then
+if [ -z "${RESOLVED// /}" ]; then
+  RESOLVED="$(dig +short "$DOMAIN" A @1.1.1.1 | sort | tr '\n' ' ')"
+fi
+if [ -z "${RESOLVED// /}" ]; then
   echo "error: $DOMAIN does not resolve yet. Add the A records and wait." >&2
   exit 1
 fi
