@@ -8,6 +8,8 @@ struct PynoApp: App {
     @StateObject private var recorder: Recorder
     @StateObject private var loc: Localization
     @StateObject private var prompts: PromptStore
+    @StateObject private var languages = LanguageStore()
+    @StateObject private var updates = UpdateChecker()
 
     init() {
         // A SwiftUI App's init runs on the main thread.
@@ -35,6 +37,9 @@ struct PynoApp: App {
                 .environmentObject(recorder)
                 .environmentObject(loc)
                 .environmentObject(prompts)
+                .environmentObject(languages)
+                .environmentObject(updates)
+                .task { await updates.checkAtLaunch(loc) }
                 .frame(minWidth: 760, minHeight: 480)
                 .onAppear {
                     delegate.recorder = recorder
@@ -43,6 +48,11 @@ struct PynoApp: App {
         }
         .defaultSize(width: 1020, height: 700)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button(loc[.checkForUpdates]) {
+                    Task { await updates.check(userInitiated: true, loc) }
+                }
+            }
             CommandGroup(replacing: .newItem) {}
             CommandGroup(after: .saveItem) {
                 Button(loc[.openTranscriptsFolder]) {

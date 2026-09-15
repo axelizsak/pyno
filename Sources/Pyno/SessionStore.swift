@@ -117,7 +117,7 @@ final class SessionStore: ObservableObject {
         out += "# \(session.title)\n\n"
 
         let dateFormatter = DateFormatter()
-        dateFormatter.locale = Locale(identifier: session.language == .french ? "fr_FR" : "en_US")
+        dateFormatter.locale = session.language.locale
         dateFormatter.dateStyle = .full
         dateFormatter.timeStyle = .short
         out += "_\(dateFormatter.string(from: session.createdAt)) · \(Clock.short(session.duration)) · \(session.language.label)_\n\n"

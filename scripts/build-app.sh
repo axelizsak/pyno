@@ -14,6 +14,15 @@ cd "$ROOT"
 APP="dist/Pyno.app"
 CONTENTS="$APP/Contents"
 
+# Recent Command Line Tools ship without SwiftUI's macro plugin, so every @State
+# fails to expand. When a full Xcode is installed, build against it instead.
+if [ -z "${DEVELOPER_DIR:-}" ] \
+  && [ "$(xcode-select -p 2>/dev/null)" = "/Library/Developer/CommandLineTools" ] \
+  && [ -d /Applications/Xcode.app/Contents/Developer ]; then
+  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+  echo "==> Using the toolchain in /Applications/Xcode.app"
+fi
+
 echo "==> Building (release, arm64)"
 swift build -c release --arch arm64
 

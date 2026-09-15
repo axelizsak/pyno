@@ -5,6 +5,8 @@ struct ContentView: View {
     @EnvironmentObject private var store: SessionStore
     @EnvironmentObject private var recorder: Recorder
     @EnvironmentObject private var loc: Localization
+    @EnvironmentObject private var languages: LanguageStore
+    @EnvironmentObject private var updates: UpdateChecker
 
     @State private var selection: UUID?
     @State private var showNewSession = false
@@ -17,6 +19,10 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 230, ideal: 270, max: 340)
         } detail: {
             VStack(spacing: 0) {
+                if let release = updates.available, !updates.isDismissed {
+                    UpdateBanner(release: release)
+                    Divider()
+                }
                 DetailPane(selection: $selection)
                 Divider()
                 TransportBar(
@@ -33,6 +39,7 @@ struct ContentView: View {
                 showNewSession = false
                 let title = draftTitle
                 let language = draftLanguage
+                languages.markUsed(language)
                 Task {
                     await recorder.start(title: title, language: language)
                     if let id = recorder.activeSessionID { selection = id }
@@ -63,7 +70,7 @@ struct ContentView: View {
     private func presentNewSession() {
         guard recorder.phase == .idle else { return }
         draftTitle = ""
-        draftLanguage = loc.language
+        draftLanguage = languages.lastUsed.flatMap { languages.contains($0) ? $0 : nil } ?? loc.language
         showNewSession = true
     }
 
@@ -73,6 +80,41 @@ struct ContentView: View {
         case .paused: recorder.resume()
         default: break
         }
+    }
+}
+
+// MARK: - Update banner
+
+/// A newer release is out. Pyno does not install it: the button opens the disk image.
+private struct UpdateBanner: View {
+    @EnvironmentObject private var updates: UpdateChecker
+    @EnvironmentObject private var loc: Localization
+    let release: UpdateChecker.Release
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 20))
+                .foregroundStyle(Theme.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(loc.updateAvailable(release.version))
+                    .font(.callout.weight(.semibold))
+                Text(loc[.updateHint])
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 12)
+            Button(loc[.later]) { updates.isDismissed = true }
+                .buttonStyle(.bordered)
+            Button(loc[.downloadUpdate]) { updates.download() }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.orange)
+        }
+        .controlSize(.regular)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
+        .background(Theme.orange.opacity(0.08))
     }
 }
 
@@ -93,8 +135,13 @@ private struct SessionList: View {
                     SessionRow(session: session, isLive: session.id == recorder.activeSessionID)
                         .tag(session.id)
                         .contextMenu {
-                            Button(loc[.analyzeInClaude]) {
-                                TranscriptExport.analyzeInClaude(session, prompt: prompts.prompt, loc)
+                            Menu(loc[.analyzeWithAI]) {
+                                Button("ChatGPT") {
+                                    TranscriptExport.analyze(session, in: .chatGPT, prompt: prompts.prompt, loc)
+                                }
+                                Button("Claude") {
+                                    TranscriptExport.analyze(session, in: .claude, prompt: prompts.prompt, loc)
+                                }
                             }
                             Button(loc[.download]) { TranscriptExport.download(session, loc) }
                             Button(loc[.copyTranscript]) { TranscriptExport.copyPlainText(session, loc) }
@@ -275,40 +322,57 @@ private struct DetailPane: View {
         }
     }
 
+    /// Full labels when the pane is wide enough, icons for the file actions when it is not.
     @ViewBuilder
     private func actionRow(for session: Session, enabled: Bool) -> some View {
+        ViewThatFits(in: .horizontal) {
+            actionButtons(for: session, compact: false)
+            actionButtons(for: session, compact: true)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .disabled(!enabled)
+    }
+
+    private func actionButtons(for session: Session, compact: Bool) -> some View {
         HStack(spacing: 10) {
+            // One entry point for the hand-off: pick the assistant, or change the prompt.
             Menu {
+                Button("ChatGPT") {
+                    TranscriptExport.analyze(session, in: .chatGPT, prompt: prompts.prompt, loc)
+                }
+                Button("Claude") {
+                    TranscriptExport.analyze(session, in: .claude, prompt: prompts.prompt, loc)
+                }
+                Divider()
                 Button(loc[.editPrompt]) { showPromptEditor = true }
-                Button(loc[.copyForClaude]) {
-                    TranscriptExport.copyForClaude(session, prompt: prompts.prompt, loc)
-                }
             } label: {
-                HStack(spacing: 7) {
-                    Burst(spokes: 8)
-                        .fill(.white)
-                        .frame(width: 13, height: 13)
-                    Text(loc[.analyzeInClaude])
-                }
-            } primaryAction: {
-                TranscriptExport.analyzeInClaude(session, prompt: prompts.prompt, loc)
+                Label(loc[.analyzeWithAI], systemImage: "sparkles")
             }
             .menuStyle(.button)
-            .buttonStyle(.borderedProminent)
-            .tint(Theme.claude)
             .fixedSize()
 
             Button {
                 TranscriptExport.download(session, loc)
             } label: {
-                Label(loc[.download], systemImage: "arrow.down.circle")
+                if compact {
+                    Image(systemName: "arrow.down.circle")
+                } else {
+                    Label(loc[.download], systemImage: "arrow.down.circle")
+                }
             }
+            .help(loc[.download])
 
             Button {
                 TranscriptExport.copyPlainText(session, loc)
             } label: {
-                Label(loc[.copy], systemImage: "doc.on.doc")
+                if compact {
+                    Image(systemName: "doc.on.doc")
+                } else {
+                    Label(loc[.copy], systemImage: "doc.on.doc")
+                }
             }
+            .help(loc[.copyTranscript])
 
             Button {
                 TranscriptExport.reveal(session)
@@ -319,9 +383,6 @@ private struct DetailPane: View {
 
             Spacer(minLength: 0)
         }
-        .buttonStyle(.bordered)
-        .controlSize(.regular)
-        .disabled(!enabled)
     }
 
     private func scrollToEnd(_ proxy: ScrollViewProxy) {
@@ -463,12 +524,14 @@ private struct TransportBar: View {
 
 private struct NewSessionSheet: View {
     @EnvironmentObject private var loc: Localization
+    @EnvironmentObject private var languages: LanguageStore
     @Binding var title: String
     @Binding var language: SessionLanguage
     let onStart: () -> Void
     let onCancel: () -> Void
 
     @FocusState private var focused: Bool
+    @State private var showLanguages = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -488,14 +551,19 @@ private struct NewSessionSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(loc[.spokenLanguage]).font(.callout).foregroundStyle(.secondary)
-                Picker("", selection: $language) {
-                    ForEach(SessionLanguage.ordered) { option in
-                        Text("\(option.flag)  \(option.label)").tag(option)
-                    }
+                HStack {
+                    Text(loc[.spokenLanguage]).font(.callout).foregroundStyle(.secondary)
+                    Spacer()
+                    Button(loc[.addLanguage]) { showLanguages = true }
+                        .buttonStyle(.link)
+                        .font(.callout)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                // Segments while they fit, a menu once the list grows.
+                if languages.available.count <= 3 {
+                    languagePicker.pickerStyle(.segmented)
+                } else {
+                    languagePicker.pickerStyle(.menu)
+                }
             }
 
             HStack {
@@ -511,6 +579,106 @@ private struct NewSessionSheet: View {
         .padding(24)
         .frame(width: 400)
         .onAppear { focused = true }
+        .sheet(isPresented: $showLanguages) {
+            LanguagesSheet(isPresented: $showLanguages, selection: $language)
+        }
+        .onChange(of: languages.available) { _, available in
+            if !available.contains(language) { language = loc.language }
+        }
+    }
+
+    private var languagePicker: some View {
+        Picker("", selection: $language) {
+            ForEach(languages.available) { option in
+                Text("\(option.flag)  \(option.label)").tag(option)
+            }
+        }
+        .labelsHidden()
+    }
+}
+
+/// Adds spoken languages to the picker. Nothing is downloaded: the speech model
+/// already covers all of them, so this only changes this Mac's list.
+private struct LanguagesSheet: View {
+    @EnvironmentObject private var loc: Localization
+    @EnvironmentObject private var languages: LanguageStore
+    @Binding var isPresented: Bool
+    @Binding var selection: SessionLanguage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 9) {
+                Image(systemName: "globe")
+                    .foregroundStyle(Theme.orange)
+                Text(loc[.languagesTitle])
+                    .font(.title3.weight(.semibold))
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(loc[.languagesHint])
+                Text(loc[.languagesInterfaceNote])
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+            List {
+                Section(loc[.yourLanguages]) {
+                    ForEach(languages.available) { language in
+                        row(language) {
+                            if !language.hasInterface {
+                                Button(loc[.remove]) { languages.remove(language) }
+                                    .buttonStyle(.borderless)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+                let rest = SessionLanguage.addable.filter { !languages.contains($0) }
+                if !rest.isEmpty {
+                    Section(loc[.moreLanguages]) {
+                        ForEach(rest) { language in
+                            row(language) {
+                                Button(loc[.add]) {
+                                    languages.add(language)
+                                    selection = language
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                            }
+                        }
+                    }
+                }
+            }
+            .listStyle(.inset(alternatesRowBackgrounds: true))
+            .frame(height: 300)
+
+            HStack {
+                Button(loc[.requestLanguage]) { NSWorkspace.shared.open(LanguageStore.requestURL) }
+                    .buttonStyle(.link)
+                    .font(.callout)
+                Spacer()
+                Button(loc[.done]) { isPresented = false }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.orange)
+            }
+        }
+        .padding(22)
+        .frame(width: 420)
+    }
+
+    private func row<Trailing: View>(
+        _ language: SessionLanguage,
+        @ViewBuilder trailing: () -> Trailing
+    ) -> some View {
+        HStack(spacing: 10) {
+            Text(language.flag)
+            Text(language.label)
+            Spacer()
+            trailing()
+        }
+        .padding(.vertical, 2)
     }
 }
 
@@ -524,9 +692,8 @@ private struct PromptSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 9) {
-                Burst(spokes: 8)
-                    .fill(Theme.claude)
-                    .frame(width: 15, height: 15)
+                Image(systemName: "sparkles")
+                    .foregroundStyle(Theme.orange)
                 Text(loc[.promptSheetTitle])
                     .font(.title3.weight(.semibold))
             }
@@ -556,7 +723,7 @@ private struct PromptSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .buttonStyle(.borderedProminent)
-                .tint(Theme.claude)
+                .tint(Theme.orange)
             }
         }
         .padding(22)

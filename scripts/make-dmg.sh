@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Packages dist/Pyno.app into dist/Pyno.dmg — a disk image with an Applications
-# shortcut, so installing is "open, drag, done" for someone non-technical.
+# Packages dist/Pyno.app into dist/Pyno.dmg — a disk image that opens on a styled
+# window: Pyno on the left, Applications on the right, an arrow between them. So
+# installing is "open, drag, done" for someone non-technical.
+#
+# The window layout is written by dmgbuild (Python, installed once into .build/),
+# which sets Finder's view options directly instead of scripting Finder — so it
+# needs no Automation permission and gives the same result on every run.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -8,19 +13,39 @@ cd "$ROOT"
 
 APP="dist/Pyno.app"
 DMG="dist/Pyno.dmg"
-STAGING="dist/dmg-staging"
+WORK="dist/dmg-work"
+VENV=".build/dmgbuild"
+# 1.6.7 stores the background as a bookmark. Earlier versions write a legacy alias
+# that Finder on macOS 15 and 26 no longer resolves, and the window comes up blank.
+DMGBUILD_VERSION="1.6.7"
 
 [ -d "$APP" ] || { echo "error: $APP not found — run scripts/build-app.sh first" >&2; exit 1; }
 
-echo "==> Staging"
-rm -rf "$STAGING" "$DMG"
-mkdir -p "$STAGING"
-cp -R "$APP" "$STAGING/"
-ln -s /Applications "$STAGING/Applications"
+if [ "$("$VENV/bin/pip" show dmgbuild 2>/dev/null | sed -n 's/^Version: //p')" != "$DMGBUILD_VERSION" ]; then
+  echo "==> Installing dmgbuild $DMGBUILD_VERSION into $VENV"
+  rm -rf "$VENV"
+  /usr/bin/python3 -m venv "$VENV"
+  # It declares Python 3.10, but runs on the 3.9 macOS ships, and nothing newer is
+  # guaranteed to be installed.
+  "$VENV/bin/pip" install --quiet --disable-pip-version-check --ignore-requires-python \
+    "dmgbuild==$DMGBUILD_VERSION"
+fi
+
+rm -rf "$WORK" "$DMG"
+mkdir -p "$WORK"
+
+echo "==> Drawing the window background"
+swift scripts/make-dmg-background.swift "$WORK/background.png" "$WORK/background@2x.png"
+tiffutil -cathidpicheck "$WORK/background.png" "$WORK/background@2x.png" \
+  -out "$WORK/background.tiff" 2>/dev/null
 
 # An unsigned build is blocked on first launch. Ship the way around it in the image.
-if ! codesign -dv "$APP" 2>&1 | grep -q "Authority=Developer ID Application"; then
-  cat > "$STAGING/OPEN ME FIRST.txt" <<'NOTICE'
+# A Developer ID build never gets this file: it opens on the first double-click.
+# (`-dv` alone does not print the Authority lines; it takes `-dvv`.)
+NOTICE=""
+if ! codesign -dvv "$APP" 2>&1 | grep "Authority=Developer ID Application" >/dev/null; then
+  NOTICE="$WORK/OPEN ME FIRST.txt"
+  cat > "$NOTICE" <<'NOTICE'
 Pyno — first launch
 ===================
 
@@ -58,16 +83,51 @@ jamais ton Mac.
 
 Nécessite un Mac Apple Silicon (M1 ou plus récent) sous macOS 14 ou plus.
 NOTICE
+  echo "    unsigned app — adding OPEN ME FIRST.txt"
 fi
 
-echo "==> Creating disk image"
-hdiutil create \
-  -volname "Pyno" \
-  -srcfolder "$STAGING" \
-  -ov -format UDZO \
-  "$DMG" >/dev/null
+# Icon centers match appCenter / applicationsCenter in make-dmg-background.swift.
+cat > "$WORK/settings.py" <<'SETTINGS'
+app = defines["app"]
+notice = defines.get("notice") or None
 
-rm -rf "$STAGING"
+format = "UDZO"
+filesystem = "HFS+"
+files = [app] + ([notice] if notice else [])
+symlinks = {"Applications": "/Applications"}
+icon = defines["volume_icon"]
+
+background = defines["background"]
+window_rect = ((200, 140), (660, 448))  # 420 of background plus the title bar
+default_view = "icon-view"
+show_status_bar = False
+show_tab_view = False
+show_toolbar = False
+show_pathbar = False
+show_sidebar = False
+show_icon_preview = False
+include_icon_view_settings = True
+
+arrange_by = None
+icon_size = 128
+text_size = 13
+icon_locations = {
+    "Pyno.app": (180, 190),
+    "Applications": (480, 190),
+    "OPEN ME FIRST.txt": (330, 70),
+}
+hide_extension = ["Pyno.app"]
+SETTINGS
+
+echo "==> Creating disk image"
+"$VENV/bin/dmgbuild" -s "$WORK/settings.py" \
+  -D app="$APP" \
+  -D notice="$NOTICE" \
+  -D volume_icon="Resources/AppIcon.icns" \
+  -D background="$WORK/background.tiff" \
+  "Pyno" "$DMG" >/dev/null
+
+rm -rf "$WORK"
 
 # Notarization accepts an unsigned disk image, but a signed one also survives being
 # renamed or re-hosted, so sign it whenever an identity is available.

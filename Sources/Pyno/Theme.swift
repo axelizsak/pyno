@@ -1,11 +1,9 @@
 import SwiftUI
 
-/// Colors and small custom shapes. Pyno's accent is the orange from the app icon.
+/// Colors. Pyno's accent is the orange from the app icon.
 enum Theme {
     static let orange = Color(red: 0.95, green: 0.47, blue: 0.13)
     static let orangeDeep = Color(red: 0.88, green: 0.33, blue: 0.03)
-    /// Claude's warm accent, used only on the "Analyze in Claude" control.
-    static let claude = Color(red: 0.85, green: 0.47, blue: 0.34)
 
     static let quiet = Color(red: 0.30, green: 0.72, blue: 0.45)
     static let loud = Color(red: 0.91, green: 0.30, blue: 0.24)
@@ -17,44 +15,6 @@ enum Theme {
         case ..<0.78: return orange
         default: return loud
         }
-    }
-}
-
-/// A tapered starburst, drawn rather than shipped as an image asset.
-/// It marks the hand-off to Claude; it is not Anthropic's official logo.
-struct Burst: Shape {
-    var spokes = 8
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let centerX = rect.midX
-        let centerY = rect.midY
-        let radius = min(rect.width, rect.height) / 2
-        let halfWidth: CGFloat = radius * 0.17
-
-        for index in 0..<spokes {
-            let angle = CGFloat(index) / CGFloat(spokes) * 2 * CGFloat.pi
-            let dirX = cos(angle)
-            let dirY = sin(angle)
-            let sideX = cos(angle + CGFloat.pi / 2)
-            let sideY = sin(angle + CGFloat.pi / 2)
-
-            let tip = CGPoint(x: centerX + dirX * radius, y: centerY + dirY * radius)
-            let left = CGPoint(x: centerX + sideX * halfWidth, y: centerY + sideY * halfWidth)
-            let right = CGPoint(x: centerX - sideX * halfWidth, y: centerY - sideY * halfWidth)
-
-            let midX = centerX + dirX * radius * 0.55
-            let midY = centerY + dirY * radius * 0.55
-            let bulge: CGFloat = halfWidth * 0.7
-            let leftControl = CGPoint(x: midX + sideX * bulge, y: midY + sideY * bulge)
-            let rightControl = CGPoint(x: midX - sideX * bulge, y: midY - sideY * bulge)
-
-            path.move(to: left)
-            path.addQuadCurve(to: tip, control: leftControl)
-            path.addQuadCurve(to: right, control: rightControl)
-            path.closeSubpath()
-        }
-        return path
     }
 }
 

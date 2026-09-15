@@ -8,7 +8,7 @@ not the stress test.
 
 Start a session, give it a title, hit Record. Pyno listens to the microphone and
 writes the text as it goes. When you stop, the session is a clean Markdown file in
-`~/Documents/Pyno/` — ready to read or to paste into Claude.
+`~/Documents/Pyno/` — ready to read or to hand to Claude or ChatGPT.
 
 Nothing is uploaded. The model (NVIDIA Parakeet TDT v3, 0.6 B, 25 European
 languages) runs on the **Apple Neural Engine** through Core ML, which keeps battery
@@ -18,7 +18,7 @@ use low and means it works just as well with the Wi-Fi off.
 
 **[pyno on the web](https://pyno.dev/)** is the link to hand out.
 Or take **[the disk image](https://github.com/axelizsak/pyno/releases/latest)**
-directly: open it, drag Pyno to Applications. Signed and notarized by Apple, so it
+directly: open it, drag Pyno onto the Applications folder the window points to. Signed and notarized by Apple, so it
 opens on the first double-click with no security warning.
 
 Apple Silicon (M1 or newer), macOS 14 or later. Intel Macs cannot run it: Parakeet
@@ -27,8 +27,9 @@ downloads its model once, about 470 MB. Everything after that is offline and ins
 
 ## Building it yourself
 
-You need the Command Line Tools, `xcode-select --install`, which include Swift 6.1.
-Full Xcode is not required.
+You need Swift 6.1 or newer. The Command Line Tools (`xcode-select --install`) used to
+be enough, but recent releases ship without SwiftUI's macro plugin, so install Xcode:
+`build-app.sh` picks up `/Applications/Xcode.app` on its own when it is there.
 
 ```bash
 ./run.sh
@@ -51,29 +52,56 @@ hears the rest of the sentence.
 The transcript is saved as it goes (every paragraph, roughly every 45 s), so a crash
 two hours in costs at most one paragraph.
 
+### Spoken languages
+
+The picker offers English and French. **Add a language…** next to it lists the other
+23 languages Parakeet v3 understands (German, Spanish, Italian, Polish, Russian,
+Ukrainian and the rest of Europe). Adding one downloads nothing and takes no space:
+the single speech model already covers all 25, so the button only puts the language
+in this Mac's picker. Nobody else's app changes. The list and the last language used
+are remembered.
+
+A language Parakeet does not cover cannot be added this way. The sheet links to a
+pre-filled GitHub issue to ask for it. Japanese or Chinese would mean a second model
+of several hundred megabytes, so they are not offered.
+
 ### Interface language
 
-The language you pick when starting a recording is also the language of the
-interface: choose French and the app speaks French, choose English and it speaks
-English. **English is the default.** The choice is remembered between launches.
-This is a deliberate choice, not system-locale or location detection.
+Starting a recording in English or French also switches the interface to that
+language. **English is the default.** The choice is remembered between launches.
+Recording in any other language leaves the interface as it was: it only exists in
+English and French. This is a deliberate choice, not system-locale or location
+detection.
 
 ### Getting a transcript out
 
 An action row sits under the session title, and the same actions are on the
 right-click menu in the sidebar:
 
-- **Analyze in Claude** — opens a new Claude conversation with the prompt *and* the
-  transcript already typed into the composer. Nothing is sent: review it, then press
-  Enter. The prompt is editable (button's ▾ menu → *Edit prompt…*), defaults to
-  "Analyze this transcript and write a summary." and is remembered.
-  Transcripts too long for a URL (roughly beyond 25 minutes of speech) are put on
-  the clipboard instead, and the caption says to press ⌘V.
+- **Analyze with AI** — a menu with **ChatGPT**, **Claude** and **Edit prompt…**.
+  Either assistant opens a new conversation with the prompt *and* the transcript
+  already in it. Claude leaves it in the composer until you press Enter; ChatGPT
+  sends it as soon as the page loads. The prompt defaults to "Analyze this
+  transcript and write a summary." and is remembered. A transcript too long for a
+  link (beyond roughly 25 minutes of speech for Claude, 6 for ChatGPT) is put on the
+  clipboard instead, and the caption says to press ⌘V.
 - **Download** — saves the Markdown file, defaulting to ~/Downloads.
 - **Copy** — plain text on the clipboard.
 - **Reveal in Finder** — the original file.
 
 Every one of these confirms with a small caption next to the pointer.
+
+### Updates
+
+Pyno does not update itself. At launch it asks GitHub for the latest release, and
+when that is newer than the running version a banner appears above the transcript:
+**Download** opens the new disk image, and dragging Pyno into Applications replaces
+the old copy. Transcripts in `~/Documents/Pyno/` are untouched. **Later** hides the
+banner until the next launch, and *Pyno → Check for Updates…* runs the same check on
+demand. Nothing else is sent: one unauthenticated request to the GitHub API.
+
+Versions before 1.1.0 have no check at all, so anyone on 1.0.x has to download the new
+version by hand once.
 
 ## Output format
 
@@ -137,8 +165,13 @@ the tag from the version. Bump it there before publishing.
 The app is notarized and stapled before the disk image is built, so the ticket lives
 inside the bundle: a copy dragged out of the image opens even on a Mac that is
 offline. The script then verifies exactly what Gatekeeper checks and prints the
-SHA-256. The recipient opens the image, drags Pyno to Applications, and launches it
-with no warning of any kind.
+SHA-256. The recipient opens the image, sees Pyno on the left and Applications on
+the right with an arrow between them, drags, and launches it with no warning of any
+kind. There is no text file in the image: a Developer ID build does not need one.
+
+The window is laid out by [dmgbuild](https://github.com/dmgbuild/dmgbuild), which
+`make-dmg.sh` installs into `.build/dmgbuild` on first use. It writes Finder's view
+settings directly, so building the image never scripts Finder.
 
 `dist/Pyno.dmg` is about 10 MB — the model is not bundled, each machine downloads it
 on first launch.
@@ -170,9 +203,12 @@ SessionStore → one .md file, rewritten on every paragraph
 | `Sources/Pyno/MicCapture.swift` | Microphone capture, level, device changes |
 | `Sources/Pyno/Recorder.swift` | State machine, ASR driving, paragraph splitting |
 | `Sources/Pyno/SessionStore.swift` | Markdown read/write |
-| `Sources/Pyno/TranscriptExport.swift` | Clipboard, download, hand-off to Claude |
+| `Sources/Pyno/TranscriptExport.swift` | Clipboard, download, hand-off to Claude and ChatGPT |
+| `Sources/Pyno/LanguageStore.swift` | Which spoken languages this Mac's picker offers |
+| `Sources/Pyno/UpdateChecker.swift` | Asks GitHub whether a newer release is out |
 | `Sources/Pyno/PromptStore.swift` | The editable prompt sent with the transcript |
-| `Sources/Pyno/Theme.swift` | Colors, level meter, the starburst mark |
+| `scripts/make-dmg-background.swift` | The drag-to-Applications backdrop of the disk image |
+| `Sources/Pyno/Theme.swift` | Colors, level meter, language chip |
 | `Sources/Pyno/Localization.swift` | Every user-facing string, English and French |
 | `Sources/Pyno/Toast.swift` | The small caption next to the pointer |
 | `Sources/Pyno/ContentView.swift` | Interface |
@@ -188,10 +224,11 @@ While recording, Pyno asks macOS not to sleep and not to nap the app
 | Shorter or longer paragraphs | `Recorder.paragraphSeconds` (45 s) |
 | Confirm faster (snappier, less stable) | `SlidingWindowAsrConfig.streaming` → `confirmationThreshold` |
 | Dedicated English model (slightly better recall) | `AsrModels.downloadAndLoad(version: .v2)` plus `SlidingWindowAsrConfig(..., tdtConfig: TdtConfig(blankId: 1024))` |
-| More languages (25 European ones) | Add cases to `SessionLanguage` — v3 already handles them |
+| Languages always in the picker | `SessionLanguage.builtIn` |
 | Store transcripts elsewhere | `SessionStore.init` |
 | Accent color | `Theme.orange` |
-| URL budget before falling back to the clipboard | `TranscriptExport.maxURLLength` |
+| URL budget before falling back to the clipboard | `Assistant.maxURLLength` |
+| Disk image window (icon positions, size) | `scripts/make-dmg.sh` settings and `make-dmg-background.swift`, kept in step |
 
 ## Known limits
 

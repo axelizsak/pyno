@@ -8,7 +8,7 @@ import SwiftUI
 enum L {
     case sessions, newSession, noSessions, noSessionsHint
     case nothingToShow, nothingToShowHint, listening, noSpeech
-    case copy, copyTranscript, analyzeInClaude, copyForClaude
+    case copy, copyTranscript, analyzeWithAI
     case download, downloadPanelTitle
     case revealInFinder, delete
     case editPrompt, promptSheetTitle, promptHint, promptReset, save
@@ -22,7 +22,10 @@ enum L {
     case untitledSession, noSpeechMarkdown, fallbackFileName
     case openTranscriptsFolder
     case quitTitle, quitBody, quitConfirm
-    case toastCopied, toastCopiedForClaude, toastOpeningClaude, toastDownloaded
+    case toastCopied, toastCopiedForAssistant, toastOpeningClaude, toastOpeningChatGPT, toastDownloaded
+    case addLanguage, languagesTitle, languagesHint, languagesInterfaceNote
+    case yourLanguages, moreLanguages, add, remove, requestLanguage, done
+    case checkForUpdates, upToDateTitle, updateCheckFailed, updateHint, downloadUpdate, later
     case micDenied, noInputDevice
     case claudeHeader
 
@@ -51,10 +54,8 @@ enum L {
             return ("Copy", "Copier")
         case .copyTranscript:
             return ("Copy transcript", "Copier le transcript")
-        case .analyzeInClaude:
-            return ("Analyze in Claude", "Analyser dans Claude")
-        case .copyForClaude:
-            return ("Copy prompt + transcript", "Copier le prompt + le transcript")
+        case .analyzeWithAI:
+            return ("Analyze with AI", "Analyser avec l'IA")
         case .download:
             return ("Download", "Télécharger")
         case .downloadPanelTitle:
@@ -62,11 +63,11 @@ enum L {
         case .editPrompt:
             return ("Edit prompt…", "Modifier le prompt…")
         case .promptSheetTitle:
-            return ("Prompt sent to Claude", "Prompt envoyé à Claude")
+            return ("Prompt sent with the transcript", "Prompt envoyé avec le transcript")
         case .promptHint:
             return (
-                "This text goes above the transcript in the new Claude conversation. Nothing is sent until you press Enter there.",
-                "Ce texte est placé au-dessus du transcript dans la nouvelle conversation Claude. Rien n'est envoyé tant que tu n'appuies pas sur Entrée."
+                "This text goes above the transcript in the new Claude or ChatGPT conversation. Claude waits for you to press Enter; ChatGPT sends it straight away.",
+                "Ce texte est placé au-dessus du transcript dans la nouvelle conversation Claude ou ChatGPT. Claude attend que tu appuies sur Entrée ; ChatGPT l'envoie directement."
             )
         case .promptReset:
             return ("Reset", "Réinitialiser")
@@ -153,12 +154,55 @@ enum L {
             return ("Stop and quit", "Arrêter et quitter")
         case .toastCopied:
             return ("Text copied", "Texte copié")
-        case .toastCopiedForClaude:
+        case .toastCopiedForAssistant:
             return ("Too long for a link — copied, press ⌘V", "Trop long pour un lien — copié, fais ⌘V")
         case .toastOpeningClaude:
             return ("Opening Claude…", "Ouverture de Claude…")
+        case .toastOpeningChatGPT:
+            return ("Opening ChatGPT…", "Ouverture de ChatGPT…")
         case .toastDownloaded:
             return ("File downloaded", "Fichier téléchargé")
+        case .addLanguage:
+            return ("Add a language…", "Ajouter une langue…")
+        case .languagesTitle:
+            return ("Spoken languages", "Langues parlées")
+        case .languagesHint:
+            return (
+                "Every language here is already inside Pyno's speech model, so adding one downloads nothing and takes no space. The list is only yours, on this Mac.",
+                "Toutes ces langues sont déjà dans le modèle vocal de Pyno : en ajouter une ne télécharge rien et ne prend aucune place. La liste n'appartient qu'à toi, sur ce Mac."
+            )
+        case .languagesInterfaceNote:
+            return (
+                "The interface itself stays in English or French.",
+                "L'interface, elle, reste en anglais ou en français."
+            )
+        case .yourLanguages:
+            return ("In your list", "Dans ta liste")
+        case .moreLanguages:
+            return ("Available", "Disponibles")
+        case .add:
+            return ("Add", "Ajouter")
+        case .remove:
+            return ("Remove", "Retirer")
+        case .requestLanguage:
+            return ("Language missing? Ask for it", "Une langue manque ? Demande-la")
+        case .done:
+            return ("Done", "Terminé")
+        case .checkForUpdates:
+            return ("Check for Updates…", "Rechercher des mises à jour…")
+        case .upToDateTitle:
+            return ("You're up to date", "Pyno est à jour")
+        case .updateCheckFailed:
+            return ("Couldn't check for updates", "Impossible de vérifier les mises à jour")
+        case .updateHint:
+            return (
+                "Download it, then drag it into Applications to replace this one. Your transcripts stay where they are.",
+                "Télécharge-la, puis glisse-la dans Applications pour remplacer celle-ci. Tes transcripts ne bougent pas."
+            )
+        case .downloadUpdate:
+            return ("Download", "Télécharger")
+        case .later:
+            return ("Later", "Plus tard")
         case .micDenied:
             return (
                 "Pyno has no access to the microphone. Open System Settings → Privacy & Security → Microphone and enable Pyno.",
@@ -187,7 +231,8 @@ func trFinalFailed(_ reason: String, _ language: SessionLanguage) -> String {
         : "The final transcription failed (\(reason)). Text confirmed so far was kept."
 }
 
-/// Current UI language. Set when a recording starts, then remembered.
+/// Current UI language. Set when a recording starts in English or French, then remembered.
+/// Recording in any other language leaves the interface as it was.
 @MainActor
 final class Localization: ObservableObject {
 
@@ -201,7 +246,7 @@ final class Localization: ObservableObject {
     }
 
     func use(_ language: SessionLanguage) {
-        guard self.language != language else { return }
+        guard language.hasInterface, self.language != language else { return }
         self.language = language
         UserDefaults.standard.set(language.rawValue, forKey: Self.defaultsKey)
     }
@@ -209,4 +254,16 @@ final class Localization: ObservableObject {
     subscript(key: L) -> String { tr(key, language) }
 
     func finalFailed(_ reason: String) -> String { trFinalFailed(reason, language) }
+
+    func upToDate(_ version: String) -> String {
+        language == .french
+            ? "Pyno \(version) est la dernière version."
+            : "Pyno \(version) is the latest version."
+    }
+
+    func updateAvailable(_ version: String) -> String {
+        language == .french
+            ? "Pyno \(version) est disponible"
+            : "Pyno \(version) is available"
+    }
 }
