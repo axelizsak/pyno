@@ -3,4 +3,4 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 ./scripts/build-app.sh
-open dist/Pyno.app
+open dist.noindex/Pyno.app

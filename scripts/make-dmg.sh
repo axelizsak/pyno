@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Packages dist/Pyno.app into dist/Pyno.dmg — a disk image that opens on a styled
-# window: Pyno on the left, Applications on the right, an arrow between them. So
-# installing is "open, drag, done" for someone non-technical.
+# Packages dist.noindex/Pyno.app into dist.noindex/Pyno.dmg — a disk image that
+# opens on a styled window: Pyno on the left, Applications on the right, an arrow
+# between them. So installing is "open, drag, done" for someone non-technical.
 #
 # The window layout is written by dmgbuild (Python, installed once into .build/),
 # which sets Finder's view options directly instead of scripting Finder — so it
@@ -11,9 +11,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-APP="dist/Pyno.app"
-DMG="dist/Pyno.dmg"
-WORK="dist/dmg-work"
+APP="dist.noindex/Pyno.app"
+DMG="dist.noindex/Pyno.dmg"
+WORK="dist.noindex/dmg-work"
 VENV=".build/dmgbuild"
 # 1.6.7 stores the background as a bookmark. Earlier versions write a legacy alias
 # that Finder on macOS 15 and 26 no longer resolves, and the window comes up blank.

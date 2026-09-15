@@ -2,7 +2,7 @@
 # Build, sign, notarize and package Pyno so that anyone can download it and open it
 # with no warning at all — no Gatekeeper prompt, no right-click trick, no terminal.
 #
-#   ./scripts/release.sh              build and notarize into dist/
+#   ./scripts/release.sh              build and notarize into dist.noindex/
 #   ./scripts/release.sh --publish    also cut the GitHub release and upload the .dmg
 #
 # First time through, run ./scripts/setup-signing.sh — it walks the certificate and
@@ -49,30 +49,30 @@ notarize() {
 
 # The app is notarized first and stapled, so the ticket travels inside the bundle.
 # A copy pulled out of the disk image then opens even on a Mac that is offline.
-notarize dist/Pyno.zip
+notarize dist.noindex/Pyno.zip
 echo "==> Stapling the app"
-xcrun stapler staple dist/Pyno.app
+xcrun stapler staple dist.noindex/Pyno.app
 
 echo "==> Re-archiving the stapled app"
-rm -f dist/Pyno.zip
-ditto -c -k --sequesterRsrc --keepParent dist/Pyno.app dist/Pyno.zip
+rm -f dist.noindex/Pyno.zip
+ditto -c -k --sequesterRsrc --keepParent dist.noindex/Pyno.app dist.noindex/Pyno.zip
 
 ./scripts/make-dmg.sh
 
-notarize dist/Pyno.dmg
+notarize dist.noindex/Pyno.dmg
 echo "==> Stapling the disk image"
-xcrun stapler staple dist/Pyno.dmg
+xcrun stapler staple dist.noindex/Pyno.dmg
 
 echo
 bold "Verifying the way Gatekeeper will"
-xcrun stapler validate dist/Pyno.app
-xcrun stapler validate dist/Pyno.dmg
-spctl --assess --type execute --verbose=4 dist/Pyno.app
-spctl --assess --type open --context context:primary-signature --verbose=4 dist/Pyno.dmg
+xcrun stapler validate dist.noindex/Pyno.app
+xcrun stapler validate dist.noindex/Pyno.dmg
+spctl --assess --type execute --verbose=4 dist.noindex/Pyno.app
+spctl --assess --type open --context context:primary-signature --verbose=4 dist.noindex/Pyno.dmg
 
-SHA="$(shasum -a 256 dist/Pyno.dmg | cut -d' ' -f1)"
+SHA="$(shasum -a 256 dist.noindex/Pyno.dmg | cut -d' ' -f1)"
 echo
-bold "dist/Pyno.dmg — $(du -h dist/Pyno.dmg | cut -f1)"
+bold "dist.noindex/Pyno.dmg — $(du -h dist.noindex/Pyno.dmg | cut -f1)"
 echo "sha256  $SHA"
 
 if [ "$PUBLISH" -eq 1 ]; then
@@ -88,7 +88,7 @@ if [ "$PUBLISH" -eq 1 ]; then
   git rev-parse "$TAG" >/dev/null 2>&1 || git tag -a "$TAG" -m "Pyno $VERSION"
   git push origin "$TAG"
 
-  gh release create "$TAG" dist/Pyno.dmg \
+  gh release create "$TAG" dist.noindex/Pyno.dmg \
     --title "Pyno $VERSION" \
     --notes "$(cat <<NOTES
 Live, fully local speech-to-text for Apple Silicon Macs.
@@ -108,6 +108,6 @@ NOTES
   bold "Live: $(gh release view "$TAG" --json url --jq .url)"
 else
   echo
-  echo "Upload dist/Pyno.dmg anywhere that serves a plain download link, or rerun with"
+  echo "Upload dist.noindex/Pyno.dmg anywhere that serves a plain download link, or rerun with"
   echo "--publish to cut the GitHub release automatically."
 fi

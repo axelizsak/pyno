@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Builds Pyno and assembles dist/Pyno.app (plus dist/Pyno.zip for distribution).
+# Builds Pyno and assembles dist.noindex/Pyno.app (plus dist.noindex/Pyno.zip for
+# distribution). The .noindex suffix keeps this copy out of Spotlight.
 #
 #   ./scripts/build-app.sh
 #   DEVELOPER_ID="Developer ID Application: Name (TEAMID)" ./scripts/build-app.sh
@@ -11,7 +12,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-APP="dist/Pyno.app"
+APP="dist.noindex/Pyno.app"
 CONTENTS="$APP/Contents"
 
 # Recent Command Line Tools ship without SwiftUI's macro plugin, so every @State
@@ -81,10 +82,10 @@ fi
 codesign --verify --strict --verbose=2 "$APP"
 
 echo "==> Archiving"
-rm -f dist/Pyno.zip
-ditto -c -k --sequesterRsrc --keepParent "$APP" dist/Pyno.zip
+rm -f dist.noindex/Pyno.zip
+ditto -c -k --sequesterRsrc --keepParent "$APP" dist.noindex/Pyno.zip
 
 echo
 echo "Done:"
 echo "  $APP"
-echo "  dist/Pyno.zip   ($(du -h dist/Pyno.zip | cut -f1))"
+echo "  dist.noindex/Pyno.zip   ($(du -h dist.noindex/Pyno.zip | cut -f1))"

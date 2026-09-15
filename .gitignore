@@ -1,5 +1,7 @@
 .build/
 .swiftpm/
-dist/
+# Spotlight skips folders ending in .noindex, so the build copy of Pyno.app never
+# shows up in search next to the installed one.
+dist.noindex/
 *.xcodeproj
 .DS_Store
