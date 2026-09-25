@@ -3,7 +3,7 @@ import FluidAudio
 
 /// Language picked when a session is created.
 ///
-/// Parakeet TDT v3 is one multilingual model covering 25 European languages, so every
+/// Parakeet Ultra (a post-trained TDT v3) is one multilingual model covering 25 European languages, so every
 /// case here is already on disk once the model is: adding a language to the picker
 /// downloads nothing. The choice is passed to the decoder as a hint (script filtering,
 /// which keeps streaming windows from drifting into another language). English and

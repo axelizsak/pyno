@@ -108,8 +108,8 @@ enum L {
             return ("Finalizing transcription…", "Finalisation de la transcription…")
         case .firstRunDownload:
             return (
-                "First launch only — downloading the speech model (470 MB)",
-                "Premier lancement seulement — téléchargement du modèle vocal (470 Mo)"
+                "First launch only — downloading the speech model (630 MB)",
+                "Premier lancement seulement — téléchargement du modèle vocal (630 Mo)"
             )
         case .firstRunCompiling:
             return (

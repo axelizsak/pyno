@@ -1,4 +1,5 @@
 import AppKit
+import FluidAudio
 import SwiftUI
 
 @main
@@ -12,6 +13,9 @@ struct PynoApp: App {
     @StateObject private var updates = UpdateChecker()
 
     init() {
+        // FluidAudio's debug output includes the recognised words: keep them out of the logs.
+        AppLogger.minimumLevel = .info
+
         // A SwiftUI App's init runs on the main thread.
         let (store, localization, recorder, prompts) = MainActor.assumeIsolated {
             () -> (SessionStore, Localization, Recorder, PromptStore) in

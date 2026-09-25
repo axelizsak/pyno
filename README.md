@@ -10,8 +10,8 @@ Start a session, give it a title, hit Record. Pyno listens to the microphone and
 writes the text as it goes. When you stop, the session is a clean Markdown file in
 `~/Documents/Pyno/` — ready to read or to hand to Claude or ChatGPT.
 
-Nothing is uploaded. The model (NVIDIA Parakeet TDT v3, 0.6 B, 25 European
-languages) runs on the **Apple Neural Engine** through Core ML, which keeps battery
+Nothing is uploaded. The model (Parakeet Ultra, a post-trained NVIDIA Parakeet
+TDT v3, 0.6 B, 25 European languages) runs on the **Apple Neural Engine** through Core ML, which keeps battery
 use low and means it works just as well with the Wi-Fi off.
 
 ## Download
@@ -23,7 +23,7 @@ opens on the first double-click with no security warning.
 
 Apple Silicon (M1 or newer), macOS 14 or later. Intel Macs cannot run it: Parakeet
 needs the Neural Engine. On first launch macOS asks for the microphone, and Pyno
-downloads its model once, about 470 MB. Everything after that is offline and instant.
+downloads its model once, about 630 MB. Everything after that is offline and instant.
 
 ## Building it yourself
 
@@ -223,6 +223,7 @@ While recording, Pyno asks macOS not to sleep and not to nap the app
 | --- | --- |
 | Shorter or longer paragraphs | `Recorder.paragraphSeconds` (45 s) |
 | Confirm faster (snappier, less stable) | `SlidingWindowAsrConfig.streaming` → `confirmationThreshold` |
+| Smaller download (~220 MB, a little less accurate, macOS 15+) | `AsrModels.downloadAndLoad(version: .redux)` in `ModelLoader` |
 | Dedicated English model (slightly better recall) | `AsrModels.downloadAndLoad(version: .v2)` plus `SlidingWindowAsrConfig(..., tdtConfig: TdtConfig(blankId: 1024))` |
 | Languages always in the picker | `SessionLanguage.builtIn` |
 | Store transcripts elsewhere | `SessionStore.init` |

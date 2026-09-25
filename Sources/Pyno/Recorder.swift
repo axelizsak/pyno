@@ -5,8 +5,11 @@ import OSLog
 import SwiftUI
 
 /// Loads the Parakeet models once and shares them across sessions.
-/// The download (~470 MB, int8) only happens on first launch; afterwards the
+/// The download (~630 MB, int8) only happens on first launch; afterwards the
 /// models are read from the local cache.
+///
+/// Parakeet Ultra is a post-trained v3: same 25 languages, tokenizer and speed,
+/// lower error rate in every one of them.
 actor ModelLoader {
     static let shared = ModelLoader()
 
@@ -18,18 +21,27 @@ actor ModelLoader {
         if let inFlight { return try await inFlight.value }
 
         let task = Task<AsrModels, Error> {
-            try await AsrModels.downloadAndLoad(version: .v3, progressHandler: progress)
+            try await AsrModels.downloadAndLoad(version: .ultra, progressHandler: progress)
         }
         inFlight = task
         do {
             let models = try await task.value
             loaded = models
             inFlight = nil
+            Self.removeRetiredModels()
             return models
         } catch {
             inFlight = nil
             throw error
         }
+    }
+
+    /// Pyno 1.1 and earlier ran plain v3. Once Ultra is loaded that copy is dead
+    /// weight (~460 MB), so free the space instead of leaving it behind.
+    private static func removeRetiredModels() {
+        let retired = AsrModels.defaultCacheDirectory(for: .v3)
+        guard FileManager.default.fileExists(atPath: retired.path) else { return }
+        try? FileManager.default.removeItem(at: retired)
     }
 }
 
@@ -298,7 +310,7 @@ final class Recorder: ObservableObject {
 
     /// `fractionCompleted` is byte-weighted and monotonic across both the download
     /// and the compile phase, so it is the only honest number to show. The library's
-    /// file counter is not: one file (the encoder weights) is 432 MB of the 470 MB,
+    /// file counter is not: one file (the encoder weights) is 595 MB of the 630 MB,
     /// so "6/23" says nothing about how far along the download is.
     private func apply(_ progress: DownloadProgress) {
         downloadProgress = progress.fractionCompleted

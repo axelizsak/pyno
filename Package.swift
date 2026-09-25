@@ -5,7 +5,7 @@ let package = Package(
     name: "Pyno",
     platforms: [.macOS(.v14)],
     dependencies: [
-        .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.15.6")
+        .package(url: "https://github.com/FluidInference/FluidAudio.git", from: "0.17.4")
     ],
     targets: [
         .executableTarget(

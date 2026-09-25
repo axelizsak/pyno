@@ -97,7 +97,7 @@ Live, fully local speech-to-text for Apple Silicon Macs.
 by Apple, so it opens on the first double-click with no security warning.
 
 Requires an Apple Silicon Mac (M1 or newer) on macOS 14 or later. On first launch
-Pyno downloads its speech model once, about 470 MB. Everything after that is offline.
+Pyno downloads its speech model once, about 630 MB. Everything after that is offline.
 
 \`\`\`
 sha256  $SHA
