@@ -421,6 +421,9 @@ private struct TransportBar: View {
     let onStop: () -> Void
 
     @State private var pulse = false
+    /// Starting a session usually takes under a second, so the spinner only appears
+    /// when it runs longer (the first download, a first compile after an update).
+    @State private var showPreparing = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -466,6 +469,14 @@ private struct TransportBar: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
         .background(.bar)
+        .task(id: recorder.phase) {
+            showPreparing = false
+            guard recorder.phase == .preparing else { return }
+            do {
+                try await Task.sleep(for: .milliseconds(1600))
+                showPreparing = true
+            } catch {}
+        }
     }
 
     @ViewBuilder
@@ -486,6 +497,8 @@ private struct TransportBar: View {
             Label(loc[.paused], systemImage: "pause.circle.fill")
                 .font(.callout)
                 .foregroundStyle(Theme.orange)
+        case .preparing where !showPreparing:
+            readyLabel
         case .preparing:
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 10) {
@@ -510,12 +523,16 @@ private struct TransportBar: View {
                 Text(recorder.status).font(.callout).foregroundStyle(.secondary)
             }
         case .idle:
-            HStack(spacing: 7) {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(Theme.quiet)
-                Text(loc[.ready]).font(.callout).foregroundStyle(.secondary)
-            }
+            readyLabel
+        }
+    }
+
+    private var readyLabel: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 10))
+                .foregroundStyle(Theme.quiet)
+            Text(loc[.ready]).font(.callout).foregroundStyle(.secondary)
         }
     }
 }
