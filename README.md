@@ -173,7 +173,7 @@ The window is laid out by [dmgbuild](https://github.com/dmgbuild/dmgbuild), whic
 `make-dmg.sh` installs into `.build/dmgbuild` on first use. It writes Finder's view
 settings directly, so building the image never scripts Finder.
 
-`dist.noindex/Pyno.dmg` is about 10 MB — the model is not bundled, each machine downloads it
+`dist.noindex/Pyno.dmg` is about 13 MB — the model is not bundled, each machine downloads it
 on first launch.
 
 ### Without a certificate
